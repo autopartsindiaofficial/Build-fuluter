@@ -3,30 +3,11 @@ allprojects {
         google()
         mavenCentral()
     }
-    tasks.matching { it.name.contains("AarMetadata") }.configureEach {
-        enabled = false
-    }
 }
 
-rootProject.buildDir = "../build"
+rootProject.layout.buildDirectory.value(rootProject.layout.buildDirectory.dir("../../build").get())
 subprojects {
-    project.buildDir = "${rootProject.buildDir}/${project.name}"
-}
-
-subprojects {
-    project.plugins.withId("com.android.library") {
-        project.android {
-            compileSdkVersion 36
-        }
-    }
-    project.plugins.withId("com.android.application") {
-        project.android {
-            compileSdkVersion 36
-        }
-    }
-    tasks.matching { it.name.contains("AarMetadata") }.configureEach {
-        enabled = false
-    }
+    project.layout.buildDirectory.value(rootProject.layout.buildDirectory.dir(project.name).get())
 }
 
 subprojects {
@@ -34,5 +15,5 @@ subprojects {
 }
 
 tasks.register("clean", Delete) {
-    delete rootProject.buildDir
+    delete rootProject.layout.buildDirectory
 }
