@@ -146,6 +146,7 @@ jobs:
           android.skipBuildDependencyValidation=true
           android.newDsl=false
           android.builtInKotlin=false
+          android.suppressUnsupportedCompileSdk=36
           EOF
           mkdir -p ~/.gradle
           cp flutter_app/android/gradle.properties ~/.gradle/gradle.properties || true
@@ -163,7 +164,7 @@ jobs:
 
       - name: Build Android Universal Release APK
         env:
-          GRADLE_OPTS: "-Dandroid.newDsl=false -Dandroid.builtInKotlin=false -Dandroid.skipBuildDependencyValidation=true"
+          GRADLE_OPTS: "-Dandroid.newDsl=false -Dandroid.builtInKotlin=false -Dandroid.skipBuildDependencyValidation=true -Dandroid.suppressUnsupportedCompileSdk=36"
         run: |
           cd flutter_app
           flutter build apk --release --no-tree-shake-icons --android-skip-build-dependency-validation
@@ -171,14 +172,14 @@ jobs:
       - name: Build Android Per-ABI Split APKs (Faster & Smaller)
         continue-on-error: true
         env:
-          GRADLE_OPTS: "-Dandroid.newDsl=false -Dandroid.builtInKotlin=false -Dandroid.skipBuildDependencyValidation=true"
+          GRADLE_OPTS: "-Dandroid.newDsl=false -Dandroid.builtInKotlin=false -Dandroid.skipBuildDependencyValidation=true -Dandroid.suppressUnsupportedCompileSdk=36"
         run: |
           cd flutter_app
           flutter build apk --split-per-abi --release --no-tree-shake-icons --android-skip-build-dependency-validation
 
       - name: Build Google Play App Bundle (AAB)
         env:
-          GRADLE_OPTS: "-Dandroid.newDsl=false -Dandroid.builtInKotlin=false -Dandroid.skipBuildDependencyValidation=true"
+          GRADLE_OPTS: "-Dandroid.newDsl=false -Dandroid.builtInKotlin=false -Dandroid.skipBuildDependencyValidation=true -Dandroid.suppressUnsupportedCompileSdk=36"
         run: |
           cd flutter_app
           flutter build appbundle --release --no-tree-shake-icons --android-skip-build-dependency-validation

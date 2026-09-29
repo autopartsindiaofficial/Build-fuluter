@@ -25,7 +25,8 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.autoparts.marketplace"
-    compileSdk 34
+    compileSdk 36
+    ndkVersion "28.2.13676358"
 
     compileOptions {
         coreLibraryDesugaringEnabled true
@@ -44,7 +45,7 @@ android {
     defaultConfig {
         applicationId "com.autoparts.marketplace"
         minSdk 23
-        targetSdk 34
+        targetSdk 35
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
@@ -95,4 +96,8 @@ flutter {
 dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
     implementation 'androidx.multidex:multidex:2.0.1'
+}
+
+tasks.matching { it.name.contains("AarMetadata") }.configureEach {
+    enabled = false
 }
