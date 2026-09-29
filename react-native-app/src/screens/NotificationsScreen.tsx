@@ -1,0 +1,837 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  RefreshControl,
+  StatusBar,
+  Image,
+  Alert,
+} from 'react-native';
+import { Text, Surface, ActivityIndicator, Icon } from 'react-native-paper';
+import { NotificationListSkeleton } from '../components/SkeletonLoaders';
+import { ScalePressable } from '../components/animations/ScalePressable';
+import { getFirebaseFirestore, getCurrentUser, getFirebaseAuth } from '../services/firebase';
+import { 
+  markAnnouncementsAsRead, 
+  markNotificationAsRead, 
+  markAllUserNotificationsAsRead,
+  deleteNotification,
+  deleteAnnouncementForUser,
+  deleteMultipleAnnouncementsForUser,
+  deleteAllPersonalNotifications,
+  getLocalReadAnnouncementIds,
+  getLocalDeletedAnnouncementIds,
+  getLocalDeletedNotifsData,
+  isNotificationLocallyDeleted
+} from '../services/notifications';
+import { useNotificationStore } from '../store/useNotificationStore';
+
+export default function NotificationsScreen({ navigation }: any) {
+  const [activeTab, setActiveTab] = useState<'chats' | 'announcements'>('chats');
+  const [personalNotifs, setPersonalNotifs] = useState<any[]>([]);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(getCurrentUser());
+  const initNotificationListener = useNotificationStore((state) => state.initNotificationListener);
+  
+  useEffect(() => {
+    let unsubAuth = () => {};
+    try {
+      const auth = getFirebaseAuth();
+      if (auth && typeof auth.onAuthStateChanged === 'function') {
+        unsubAuth = auth.onAuthStateChanged((u: any) => {
+          setCurrentUser(u || getCurrentUser());
+        });
+      }
+    } catch (_) {}
+    return () => {
+      try { unsubAuth(); } catch (_) {}
+    };
+  }, []);
+
+  const currentUid = currentUser?.uid || currentUser?.id;
+
+  const matchesCurrentUser = (val: any): boolean => {
+    if (!val || !currentUser) return false;
+    const clean = String(val).trim().toLowerCase();
+    const uUid = String(currentUser.uid || '').trim().toLowerCase();
+    const uId = String(currentUser.id || '').trim().toLowerCase();
+    const uPhone = String(currentUser.phoneNumber || '').trim().toLowerCase();
+    const uEmail = String(currentUser.email || '').trim().toLowerCase();
+    return Boolean(
+      (uUid && clean === uUid) ||
+      (uId && clean === uId) ||
+      (uPhone && clean === uPhone) ||
+      (uEmail && clean === uEmail)
+    );
+  };
+
+  const fetchNotifications = () => {
+    try {
+      const db = getFirebaseFirestore();
+      if (!db || typeof db.collection !== 'function') {
+        setLoading(false);
+        setRefreshing(false);
+        return () => {};
+      }
+
+      // 1. Fetch personal notifications
+      let unsubNotifs = () => {};
+
+      if (currentUid) {
+        const notifQuery = db
+          .collection('notifications')
+          .where('recipientId', '==', currentUid);
+
+        const handleNotifSnapshot = async (snapshot: any) => {
+          const rawList: any[] = [];
+          const deletedData = await getLocalDeletedNotifsData(currentUid);
+          if (snapshot && typeof snapshot.forEach === 'function') {
+            snapshot.forEach((doc: any) => {
+              const docId = doc.id;
+              const data = { id: docId, ...(doc.data ? doc.data() : doc) };
+              if (isNotificationLocallyDeleted(data, deletedData, currentUid)) return;
+              // Skip self notifications
+              if (matchesCurrentUser(data.senderId)) return;
+              rawList.push(data);
+            });
+          }
+
+          // Group by chatId so that multiple message notifications for the same chat show as the latest item
+          const chatNotifMap = new Map<string, any>();
+          rawList.forEach((item) => {
+            const key = item.chatId || item.id;
+            const existing = chatNotifMap.get(key);
+            if (!existing || (item.createdAt || 0) > (existing.createdAt || 0)) {
+              chatNotifMap.set(key, item);
+            }
+          });
+
+          const list: any[] = Array.from(chatNotifMap.values());
+          list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          setPersonalNotifs(list);
+          setLoading(false);
+          setRefreshing(false);
+        };
+
+        try {
+          unsubNotifs = notifQuery.onSnapshot(
+            handleNotifSnapshot,
+            (err: any) => {
+              console.warn('[NotificationsScreen] Personal notifs snapshot error:', err);
+              // Fallback to plain get if snapshot failed
+              notifQuery.get().then(handleNotifSnapshot).catch(() => {});
+              setLoading(false);
+              setRefreshing(false);
+            }
+          );
+        } catch (e) {
+          console.warn('[NotificationsScreen] onSnapshot exception:', e);
+        }
+      } else {
+        setPersonalNotifs([]);
+        setLoading(false);
+      }
+
+      // 2. Fetch platform announcements
+      const unsubAnnounce = db
+        .collection('announcements')
+        .limit(30)
+        .onSnapshot(
+          async (snapshot: any) => {
+            const list: any[] = [];
+            const readSet = await getLocalReadAnnouncementIds();
+            const deletedSet = await getLocalDeletedAnnouncementIds();
+            if (snapshot && typeof snapshot.forEach === 'function') {
+              snapshot.forEach((doc: any) => {
+                const docId = doc.id;
+                // Skip if deleted/dismissed by this user
+                if (docId && deletedSet.has(docId)) {
+                  return;
+                }
+                const data = doc.data ? doc.data() : doc;
+                const isRead = readSet.has(docId);
+                list.push({ 
+                  id: docId, 
+                  ...data, 
+                  type: 'announcement', 
+                  read: isRead 
+                });
+              });
+            }
+            list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            setAnnouncements(list);
+            setLoading(false);
+            setRefreshing(false);
+          },
+          (err: any) => {
+            console.warn('[NotificationsScreen] Announcements snapshot error:', err);
+            setLoading(false);
+            setRefreshing(false);
+          }
+        );
+
+      return () => {
+        try { unsubNotifs(); } catch (_) {}
+        try { unsubAnnounce(); } catch (_) {}
+      };
+    } catch (e) {
+      console.warn('[NotificationsScreen] Fetch error:', e);
+      setLoading(false);
+      setRefreshing(false);
+      return () => {};
+    }
+  };
+
+  useEffect(() => {
+    const unsub = fetchNotifications();
+    return () => {
+      try {
+        if (typeof unsub === 'function') unsub();
+      } catch (_) {}
+    };
+  }, [currentUid]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchNotifications();
+  };
+
+  const handleMarkAllRead = async () => {
+    if (activeTab === 'chats' && currentUid) {
+      await markAllUserNotificationsAsRead(currentUid);
+      setPersonalNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
+      initNotificationListener(currentUid);
+    } else if (activeTab === 'announcements') {
+      const annIds = announcements.map((a) => a.id).filter(Boolean);
+      if (annIds.length > 0) {
+        await markAnnouncementsAsRead(annIds);
+        setAnnouncements((prev) => prev.map((a) => ({ ...a, read: true })));
+        initNotificationListener(currentUid);
+      }
+    }
+  };
+
+  const handleDeleteAllNotifications = () => {
+    const isChat = activeTab === 'chats';
+    const count = isChat ? personalNotifs.length : announcements.length;
+    if (count === 0) return;
+
+    Alert.alert(
+      'Clear All Notifications',
+      `Are you sure you want to delete all ${count} ${isChat ? 'chat notifications' : 'broadcasts'}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear All',
+          style: 'destructive',
+          onPress: async () => {
+            if (isChat) {
+              const allIds = personalNotifs.map((n) => n.id).filter(Boolean);
+              setPersonalNotifs([]);
+              if (currentUid) {
+                await deleteAllPersonalNotifications(currentUid, allIds);
+                initNotificationListener(currentUid);
+              }
+            } else {
+              const allIds = announcements.map((a) => a.id).filter(Boolean);
+              setAnnouncements([]);
+              if (allIds.length > 0) {
+                await deleteMultipleAnnouncementsForUser(allIds);
+                initNotificationListener(currentUid);
+              }
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteNotification = (item: any) => {
+    Alert.alert(
+      'Delete Notification',
+      'Are you sure you want to remove this notification?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            // If item belongs to personal notifications tab or is in notifications collection
+            if (activeTab === 'chats' || item.type !== 'announcement') {
+              setPersonalNotifs((prev) =>
+                prev.filter((n) => n.id !== item.id && (!item.chatId || n.chatId !== item.chatId))
+              );
+              await deleteNotification(item.id, item.chatId, currentUid);
+              initNotificationListener(currentUid);
+            } else {
+              setAnnouncements((prev) => prev.filter((a) => a.id !== item.id));
+              await deleteAnnouncementForUser(item.id);
+              initNotificationListener(currentUid);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleNotificationPress = (item: any) => {
+    if (item.type === 'chat_message' || item.chatId) {
+      // Mark as read
+      markNotificationAsRead(item.id);
+      setPersonalNotifs((prev) =>
+        prev.map((n) => (n.id === item.id ? { ...n, read: true } : n))
+      );
+      initNotificationListener(currentUid);
+      // Navigate to chat room
+      navigation.navigate('ChatRoom', {
+        chatId: item.chatId,
+        part: {
+          id: item.partId,
+          title: item.partTitle,
+          imageUrl: item.partImageUrl,
+          price: item.partPrice,
+          sellerId: item.sellerId,
+          sellerName: item.sellerName,
+        },
+        chat: {
+          id: item.chatId,
+          partId: item.partId,
+          partTitle: item.partTitle,
+          partImageUrl: item.partImageUrl,
+          partPrice: item.partPrice,
+          buyerId: item.buyerId,
+          buyerName: item.buyerName,
+          sellerId: item.sellerId,
+          sellerName: item.sellerName,
+        }
+      });
+    } else if (item.type === 'new_follower' || item.followerId || (item.senderId && !item.chatId)) {
+      // Mark follow notification as read
+      markNotificationAsRead(item.id);
+      setPersonalNotifs((prev) =>
+        prev.map((n) => (n.id === item.id ? { ...n, read: true } : n))
+      );
+      initNotificationListener(currentUid);
+      const targetUserId = item.followerId || item.senderId;
+      if (targetUserId) {
+        navigation.navigate('SellerProfile', {
+          sellerId: targetUserId,
+          sellerName: item.followerName || item.senderName || 'User',
+        });
+      }
+    } else {
+      // Mark announcement as read on tap
+      markAnnouncementsAsRead([item.id]);
+      setAnnouncements((prev) =>
+        prev.map((a) => (a.id === item.id ? { ...a, read: true } : a))
+      );
+      initNotificationListener(currentUid);
+    }
+  };
+
+  const formatRelativeTime = (timestamp?: number) => {
+    if (!timestamp) return 'Recently';
+    const diff = Date.now() - timestamp;
+    const mins = Math.floor(diff / (1000 * 60));
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+
+    return new Date(timestamp).toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+    });
+  };
+
+  // Filter items based on selected tab ('chats' or 'announcements')
+  const currentList = React.useMemo(() => {
+    let list: any[] = [];
+    if (activeTab === 'chats') {
+      list = [...personalNotifs];
+    } else {
+      list = [...announcements];
+    }
+    return list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  }, [activeTab, personalNotifs, announcements]);
+
+  const unreadCurrentTab = React.useMemo(() => {
+    if (activeTab === 'chats') {
+      return personalNotifs.filter((n) => !n.read).length;
+    }
+    return announcements.filter((a) => !a.read).length;
+  }, [activeTab, personalNotifs, announcements]);
+
+  const renderItem = ({ item }: { item: any }) => {
+    const isFollow = item.type === 'new_follower' || item.type === 'follow';
+    const isChat = item.type === 'chat_message' || Boolean(item.chatId);
+    const isUnread = item.read === false;
+
+    return (
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={() => handleNotificationPress(item)}
+      >
+        <Surface style={[styles.card, isUnread && styles.cardUnread]} elevation={1}>
+          <View style={styles.cardHeader}>
+            {/* Left Icon or Product Thumbnail or Follower Avatar */}
+            {isChat && item.partImageUrl ? (
+              <Image source={{ uri: item.partImageUrl }} style={styles.productThumb} />
+            ) : isFollow && (item.senderPhoto || item.followerPhoto) ? (
+              <Image source={{ uri: item.senderPhoto || item.followerPhoto }} style={styles.productThumb} />
+            ) : (
+              <View
+                style={[
+                  styles.iconBox,
+                  {
+                    backgroundColor: isFollow
+                      ? 'rgba(16, 185, 129, 0.15)'
+                      : isChat
+                      ? 'rgba(0, 102, 255, 0.12)'
+                      : 'rgba(59, 130, 246, 0.12)',
+                  },
+                ]}
+              >
+                <Icon
+                  source={
+                    isFollow
+                      ? 'account-plus'
+                      : isChat
+                      ? 'comment-text-outline'
+                      : 'bullhorn-variant-outline'
+                  }
+                  size={22}
+                  color={isFollow ? '#10B981' : isChat ? '#0066FF' : '#38BDF8'}
+                />
+              </View>
+            )}
+
+            <View style={styles.headerInfo}>
+              <View style={styles.titleRow}>
+                <Text variant="titleSmall" style={[styles.annTitle, isUnread && styles.annTitleBold]} numberOfLines={1}>
+                  {isFollow
+                    ? item.senderName || item.followerName || 'New Follower'
+                    : isChat
+                    ? item.senderName || 'New Inquiry'
+                    : item.title || 'Platform Announcement'}
+                </Text>
+                <View style={styles.timeBadgeContainer}>
+                  {isUnread && <View style={styles.unreadDot} />}
+                  <Text style={styles.timeText}>{formatRelativeTime(item.createdAt)}</Text>
+                  
+                  {/* Delete / Remove Action */}
+                  <TouchableOpacity
+                    style={styles.deleteBtn}
+                    onPress={() => handleDeleteNotification(item)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Icon source="trash-can-outline" size={17} color="#94A3B8" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {isFollow ? (
+                <Text style={styles.followerSubText} numberOfLines={1}>
+                  ✨ Started following you
+                </Text>
+              ) : isChat && item.partTitle ? (
+                <Text style={styles.partTitleSub} numberOfLines={1}>
+                  🚗 {item.partTitle} {item.partPrice ? `(₹${Number(item.partPrice).toLocaleString('en-IN')})` : ''}
+                </Text>
+              ) : (
+                <Text style={styles.authorText}>
+                  {item.authorEmail ? `By ${item.authorEmail.split('@')[0]}` : 'Auto Parts Official'}
+                </Text>
+              )}
+            </View>
+          </View>
+
+          <Text style={[styles.annText, isUnread && styles.annTextUnread]} numberOfLines={3}>
+            {item.text || item.message || ''}
+          </Text>
+
+          {isFollow ? (
+            <View style={styles.chatActionRow}>
+              <Text style={styles.tapToFollowProfileText}>Tap to view profile →</Text>
+            </View>
+          ) : isChat ? (
+            <View style={styles.chatActionRow}>
+              <Text style={styles.tapToReplyText}>Tap to open conversation →</Text>
+            </View>
+          ) : null}
+        </Surface>
+      </TouchableOpacity>
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#0066FF" />
+
+      {/* Primary Royal Blue Brand Header */}
+      <View style={styles.topHeaderBar}>
+        {navigation?.canGoBack?.() && (
+          <TouchableOpacity
+            style={styles.headerBackBtn}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}
+          >
+            <Icon source="arrow-left" size={22} color="#FFFFFF" />
+          </TouchableOpacity>
+        )}
+        <Text style={styles.topHeaderTitle}>Notifications</Text>
+        {(unreadChatsCount > 0 || unreadAnnounceCount > 0) && (
+          <View style={styles.topHeaderBadge}>
+            <Text style={styles.topHeaderBadgeText}>
+              {unreadChatsCount + unreadAnnounceCount} new
+            </Text>
+          </View>
+        )}
+      </View>
+
+      {/* Header Bar with Tabs and Actions */}
+      <View style={styles.topControlBar}>
+        <View style={styles.tabPillContainer}>
+          <TouchableOpacity
+            style={[styles.tabPill, activeTab === 'chats' && styles.tabPillActive]}
+            onPress={() => setActiveTab('chats')}
+          >
+            <Text style={[styles.tabPillText, activeTab === 'chats' && styles.tabPillTextActive]}>
+              Chat ({personalNotifs.length})
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tabPill, activeTab === 'announcements' && styles.tabPillActive]}
+            onPress={() => setActiveTab('announcements')}
+          >
+            <Text style={[styles.tabPillText, activeTab === 'announcements' && styles.tabPillTextActive]}>
+              Broadcast ({announcements.length})
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.headerActionsRight}>
+          {unreadCurrentTab > 0 && (
+            <TouchableOpacity style={styles.markReadBtn} onPress={handleMarkAllRead}>
+              <Icon source="check-all" size={15} color="#38BDF8" />
+              <Text style={styles.markReadText}>Read</Text>
+            </TouchableOpacity>
+          )}
+
+          {currentList.length > 0 && (
+            <TouchableOpacity 
+              style={styles.deleteAllBtn} 
+              onPress={handleDeleteAllNotifications}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Icon source="trash-can-outline" size={15} color="#EF4444" />
+              <Text style={styles.deleteAllText}>Clear All</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      {loading ? (
+        <NotificationListSkeleton count={5} />
+      ) : currentList.length === 0 ? (
+        <View style={styles.centerContainer}>
+          <View style={styles.emptyIconBox}>
+            <Icon source={activeTab === 'chats' ? "comment-off-outline" : "bell-off-outline"} size={48} color="#64748B" />
+          </View>
+          <Text variant="titleMedium" style={styles.emptyTitle}>
+            {activeTab === 'chats' ? 'No Chat Notifications' : 'No Broadcasts Yet'}
+          </Text>
+          <Text style={styles.emptySubtitle}>
+            {activeTab === 'chats'
+              ? 'When buyers or sellers send you inquiries and chat messages, they will appear here.'
+              : 'When platform announcements or official updates are published, they will appear here.'}
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={currentList}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.listContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          bounces={true}
+          alwaysBounceVertical={true}
+          decelerationRate="normal"
+          overScrollMode="never"
+          removeClippedSubviews={Platform.OS === 'android'}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={7}
+          updateCellsBatchingPeriod={50}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#0066FF"
+              colors={['#0066FF']}
+            />
+          }
+        />
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0B1220',
+  },
+  topHeaderBar: {
+    height: 56,
+    backgroundColor: '#0066FF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  headerBackBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  topHeaderTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    flex: 1,
+  },
+  topHeaderBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  topHeaderBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  topControlBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#0F1E36',
+  },
+  tabPillContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  tabPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  tabPillActive: {
+    backgroundColor: '#0066FF',
+  },
+  tabPillText: {
+    color: '#94A3B8',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  tabPillTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  headerActionsRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  markReadBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor: 'rgba(56, 189, 248, 0.1)',
+  },
+  markReadText: {
+    color: '#38BDF8',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  deleteAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+  },
+  deleteAllText: {
+    color: '#EF4444',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  listContent: {
+    padding: 16,
+    paddingBottom: 32,
+  },
+  card: {
+    backgroundColor: '#0F1E36',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 12,
+  },
+  cardUnread: {
+    backgroundColor: '#132847',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  productThumb: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    marginRight: 12,
+    backgroundColor: '#1E293B',
+  },
+  iconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  headerInfo: {
+    flex: 1,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  annTitle: {
+    color: '#E2E8F0',
+    fontWeight: '600',
+    fontSize: 14,
+    flex: 1,
+    marginRight: 8,
+  },
+  annTitleBold: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  timeBadgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#38BDF8',
+  },
+  timeText: {
+    color: '#64748B',
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  deleteBtn: {
+    padding: 3,
+    marginLeft: 4,
+    borderRadius: 6,
+  },
+  partTitleSub: {
+    color: '#38BDF8',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  followerSubText: {
+    color: '#10B981',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  authorText: {
+    color: '#94A3B8',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  annText: {
+    color: '#94A3B8',
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 4,
+  },
+  annTextUnread: {
+    color: '#F1F5F9',
+  },
+  chatActionRow: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  tapToReplyText: {
+    color: '#0066FF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  tapToFollowProfileText: {
+    color: '#10B981',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  loadingText: {
+    color: '#94A3B8',
+    marginTop: 12,
+    fontSize: 13,
+  },
+  emptyIconBox: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    marginBottom: 6,
+  },
+  emptySubtitle: {
+    color: '#64748B',
+    fontSize: 13,
+    textAlign: 'center',
+    maxWidth: 280,
+    lineHeight: 18,
+  },
+});

@@ -1,0 +1,14 @@
+node_modules/
+build/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+!google-services.json
+!**/google-services.json
+!*.jar
+!**/gradle-wrapper.jar
+!**/debug.keystore
+
+firebase-service-account.json

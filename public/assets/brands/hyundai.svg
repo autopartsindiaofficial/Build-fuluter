@@ -1,0 +1,28 @@
+
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="hyundaiSilver" x1="40" y1="40" x2="216" y2="216" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="40%" stop-color="#1D4ED8"/>
+      <stop offset="100%" stop-color="#0F172A"/>
+    </linearGradient>
+    <linearGradient id="chromeGrad" x1="40" y1="50" x2="216" y2="206" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#475569"/>
+      <stop offset="30%" stop-color="#0284C7"/>
+      <stop offset="70%" stop-color="#0369A1"/>
+      <stop offset="100%" stop-color="#0C4A6E"/>
+    </linearGradient>
+  </defs>
+  <g>
+    <!-- Outer Slanted Oval Ring -->
+    <path d="M 128,52 C 60,52 20,86 20,128 C 20,170 60,204 128,204 C 196,204 236,170 236,128 C 236,86 196,52 128,52 Z M 128,70 C 182,70 216,96 216,128 C 216,160 182,186 128,186 C 74,186 40,160 40,128 C 40,96 74,70 128,70 Z" fill="url(#chromeGrad)"/>
+    
+    <!-- Stylized Slanted 'H' with connecting bridge -->
+    <!-- Left Pillar -->
+    <path d="M 72,176 C 68,154 74,106 90,80 C 94,74 102,74 102,82 C 90,108 86,146 92,176 C 94,182 86,184 72,176 Z" fill="url(#chromeGrad)"/>
+    <!-- Right Pillar -->
+    <path d="M 154,80 C 170,106 174,150 162,176 C 160,182 152,182 152,174 C 164,148 160,108 144,80 C 142,74 150,72 154,80 Z" fill="url(#chromeGrad)"/>
+    <!-- Slanted Crossbar -->
+    <path d="M 86,134 C 110,122 144,118 164,124 C 168,126 166,134 160,136 C 138,142 108,144 84,142 C 80,140 82,136 86,134 Z" fill="url(#chromeGrad)"/>
+  </g>
+</svg>

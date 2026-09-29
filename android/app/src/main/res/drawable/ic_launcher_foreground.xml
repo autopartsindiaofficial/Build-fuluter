@@ -1,0 +1,27 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <!-- Transparent Background for Foreground -->
+    
+    <!-- White Left Pillar & Apex -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M23,68 L44,12 L60,12 L81,68 L65,68 L52,33.33 L39,68 Z" />
+        
+    <!-- White Crossbar -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M47.25,46 L56.75,46 L60.5,56 L43.5,56 Z" />
+        
+    <!-- Blue Right Pillar -->
+    <path
+        android:fillColor="#0066FF"
+        android:pathData="M56.75,46 L72.75,46 L81,68 L65,68 Z" />
+        
+    <!-- Orange Accent -->
+    <path
+        android:fillColor="#FF6B00"
+        android:pathData="M38,72 L59,72 L56.75,78 L35.75,78 Z" />
+</vector>

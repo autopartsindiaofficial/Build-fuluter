@@ -1,0 +1,17 @@
+<svg viewBox="0 0 200 200" width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="renaultYellow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFCC00" />
+      <stop offset="100%" stop-color="#E5A800" />
+    </linearGradient>
+    <linearGradient id="renaultDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E293B" />
+      <stop offset="100%" stop-color="#0F172A" />
+    </linearGradient>
+  </defs>
+  <!-- Official Renault Diamond Emblem -->
+  <g transform="translate(30, 15) scale(0.7)">
+    <path d="M 100 10 L 180 110 L 100 210 L 20 110 Z M 100 48 L 52 110 L 100 172 L 148 110 Z" fill="url(#renaultDark)" fill-rule="evenodd"/>
+    <path d="M 100 70 L 132 110 L 100 150 L 68 110 Z" fill="none" stroke="url(#renaultYellow)" stroke-width="8"/>
+  </g>
+</svg>

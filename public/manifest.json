@@ -1,0 +1,23 @@
+{
+  "short_name": "AutoParts",
+  "name": "Auto Parts Marketplace India",
+  "description": "Buy and sell new and used auto spare parts across India",
+  "icons": [
+    {
+      "src": "/app-icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/app-icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0B1220",
+  "theme_color": "#1565FF",
+  "display": "standalone",
+  "orientation": "portrait"
+}

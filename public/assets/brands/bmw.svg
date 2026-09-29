@@ -1,0 +1,26 @@
+<svg viewBox="0 0 200 200" width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bmwBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0066B1" />
+      <stop offset="100%" stop-color="#004C85" />
+    </linearGradient>
+  </defs>
+  <!-- Official BMW Roundel Emblem -->
+  <g transform="translate(20, 20) scale(0.8)">
+    <!-- Outer Black Ring -->
+    <circle cx="100" cy="100" r="94" fill="#0F172A" stroke="#CBD5E1" stroke-width="4"/>
+    <!-- Inner Circle with Bavarian Blue & White Quadrants -->
+    <circle cx="100" cy="100" r="62" fill="#FFFFFF"/>
+    <!-- Top-Right Blue Quadrant -->
+    <path d="M 100 38 A 62 62 0 0 1 162 100 L 100 100 Z" fill="url(#bmwBlue)"/>
+    <!-- Bottom-Left Blue Quadrant -->
+    <path d="M 100 162 A 62 62 0 0 1 38 100 L 100 100 Z" fill="url(#bmwBlue)"/>
+    <!-- Quarter lines -->
+    <line x1="100" y1="38" x2="100" y2="162" stroke="#0F172A" stroke-width="2"/>
+    <line x1="38" y1="100" x2="162" y2="100" stroke="#0F172A" stroke-width="2"/>
+    <!-- BMW Typography -->
+    <text x="56" y="32" font-family="sans-serif" font-weight="900" font-size="16" fill="#FFFFFF">B</text>
+    <text x="93" y="24" font-family="sans-serif" font-weight="900" font-size="16" fill="#FFFFFF">M</text>
+    <text x="132" y="32" font-family="sans-serif" font-weight="900" font-size="16" fill="#FFFFFF">W</text>
+  </g>
+</svg>

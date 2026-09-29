@@ -1,0 +1,26 @@
+
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="mahindraRed" x1="0" y1="0" x2="256" y2="256">
+      <stop offset="0%" stop-color="#DC2626"/>
+      <stop offset="100%" stop-color="#991B1B"/>
+    </linearGradient>
+    <linearGradient id="mahindraChrome" x1="30" y1="40" x2="226" y2="216" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#E2E8F0"/>
+      <stop offset="40%" stop-color="#94A3B8"/>
+      <stop offset="70%" stop-color="#475569"/>
+      <stop offset="100%" stop-color="#1E293B"/>
+    </linearGradient>
+  </defs>
+
+  <g>
+    <!-- Left Wing / Peak -->
+    <path d="M 44,178 L 92,72 C 96,64 106,64 110,72 L 126,112 L 102,164 C 98,174 86,182 74,182 Z" fill="#DC2626"/>
+    <!-- Right Wing / Peak -->
+    <path d="M 212,178 L 164,72 C 160,64 150,64 146,72 L 130,112 L 154,164 C 158,174 170,182 182,182 Z" fill="#DC2626"/>
+    <!-- Center Chrome Intersection Fold -->
+    <path d="M 112,84 L 128,124 L 144,84 L 134,70 L 128,78 L 122,70 Z" fill="#B91C1C"/>
+    <!-- Base Curved Underscore -->
+    <path d="M 64,196 C 104,212 152,212 192,196 C 172,204 136,206 64,196 Z" fill="#DC2626"/>
+  </g>
+</svg>

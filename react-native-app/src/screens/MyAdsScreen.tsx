@@ -1,0 +1,1332 @@
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+  Image,
+  Alert,
+  ActivityIndicator,
+  RefreshControl,
+  TextInput,
+  Platform,
+  Dimensions,
+  Share,
+} from 'react-native';
+import { Icon, Surface, Badge } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getFirebaseFirestore, getCurrentUser, getFirebaseAuth } from '../services/firebase';
+import { useLanguage } from '../context/LanguageContext';
+import { EditListingModal } from '../components/EditListingModal';
+import { getOptimizedImageUrl, deleteMultipleImagesFromCloudinary } from '../services/cloudinary';
+import { ListFeedSkeleton } from '../components/SkeletonLoaders';
+import { ScalePressable } from '../components/animations/ScalePressable';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
+
+export default function MyAdsScreen({ navigation, user: initialUser }: any) {
+  const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
+
+  const [activeTab, setActiveTab] = useState<'active' | 'sold' | 'expired'>('active');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [myParts, setMyParts] = useState<any[]>([]);
+
+  // Edit Modal State
+  const [selectedPartToEdit, setSelectedPartToEdit] = useState<any>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [actionSuccessMessage, setActionSuccessMessage] = useState<string | null>(null);
+
+  const [currentUser, setCurrentUser] = useState(() => initialUser || getCurrentUser());
+
+  useEffect(() => {
+    const authInst = getFirebaseAuth();
+    if (authInst && typeof authInst.onAuthStateChanged === 'function') {
+      const unsub = authInst.onAuthStateChanged((usr) => {
+        if (usr) setCurrentUser(usr);
+      });
+      return () => unsub();
+    }
+  }, []);
+
+  const currentUid = currentUser?.uid || currentUser?.id || null;
+  const currentEmail = (currentUser?.email || '').toLowerCase();
+
+  // 1. Real-time Firestore Listener for User's Listings
+  useEffect(() => {
+    setLoading(true);
+    let unsubscribe = () => {};
+
+    try {
+      const db = getFirebaseFirestore();
+      if (db && typeof db.collection === 'function') {
+        unsubscribe = db.collection('spareParts').onSnapshot(
+          (snapshot: any) => {
+            const list: any[] = [];
+            snapshot.forEach((doc: any) => {
+              const data = doc.data();
+              list.push({ id: doc.id, ...data });
+            });
+
+            // Filter parts belonging to the logged-in user
+            const userListings = list.filter((part: any) => {
+              if (part.isDeleted) return false;
+              const sellerId = part.sellerId || part.userId || part.ownerId;
+              const sellerEmail = (part.sellerEmail || part.ownerEmail || '').toLowerCase();
+
+              const matchesId = currentUid && sellerId && (sellerId === currentUid || String(sellerId) === String(currentUid));
+              const matchesEmail = currentEmail && sellerEmail && (sellerEmail === currentEmail);
+
+              return Boolean(matchesId || matchesEmail);
+            });
+
+            // Sort by most recently updated/created first
+            userListings.sort((a, b) => {
+              const timeA = a.updatedAt || a.createdAt || 0;
+              const timeB = b.updatedAt || b.createdAt || 0;
+              return timeB - timeA;
+            });
+
+            setMyParts(userListings);
+            setLoading(false);
+          },
+          (error: any) => {
+            console.warn('[MyAdsScreen] Firestore snapshot error:', error);
+            setLoading(false);
+          }
+        );
+      } else {
+        setLoading(false);
+      }
+    } catch (err) {
+      console.warn('[MyAdsScreen] Error setting up listener:', err);
+      setLoading(false);
+    }
+
+    return () => {
+      try {
+        unsubscribe();
+      } catch (_) {}
+    };
+  }, [currentUid, currentEmail]);
+
+  // 2. Manual Refresh Handler
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const db = getFirebaseFirestore();
+      if (db && typeof db.collection === 'function') {
+        const snap = await db.collection('spareParts').get();
+        const list: any[] = [];
+        snap.forEach((doc: any) => {
+          const data = doc.data();
+          if (!data.isDeleted) {
+            const sellerId = data.sellerId || data.userId || data.ownerId;
+            const sellerEmail = (data.sellerEmail || data.ownerEmail || '').toLowerCase();
+            const matchesId = currentUid && sellerId && (sellerId === currentUid || String(sellerId) === String(currentUid));
+            const matchesEmail = currentEmail && sellerEmail && (sellerEmail === currentEmail);
+            if (matchesId || matchesEmail) {
+              list.push({ id: doc.id, ...data });
+            }
+          }
+        });
+        list.sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0));
+        setMyParts(list);
+      }
+    } catch (e) {
+      console.warn('[MyAdsScreen] Refresh error:', e);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [currentUid, currentEmail]);
+
+  // 3. Category & Tab Filtering
+  const now = Date.now();
+  const activeAds = useMemo(() => {
+    return myParts.filter((p) => {
+      const isSold = p.sold === true || p.status === 'sold';
+      const created = p.createdAt || now;
+      const isExpired = now - created > NINETY_DAYS_MS;
+      return !isSold && !isExpired;
+    });
+  }, [myParts, now]);
+
+  const soldAds = useMemo(() => {
+    return myParts.filter((p) => p.sold === true || p.status === 'sold');
+  }, [myParts]);
+
+  const expiredAds = useMemo(() => {
+    return myParts.filter((p) => {
+      const isSold = p.sold === true || p.status === 'sold';
+      const created = p.createdAt || now;
+      const isExpired = now - created > NINETY_DAYS_MS;
+      return !isSold && isExpired;
+    });
+  }, [myParts, now]);
+
+  // Filter based on selected tab and search query
+  const filteredAds = useMemo(() => {
+    let list = activeTab === 'active' ? activeAds : activeTab === 'sold' ? soldAds : expiredAds;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter((p) => {
+        return (
+          p.title?.toLowerCase().includes(q) ||
+          p.carBrand?.toLowerCase().includes(q) ||
+          p.carModel?.toLowerCase().includes(q) ||
+          p.category?.toLowerCase().includes(q) ||
+          p.location?.toLowerCase().includes(q)
+        );
+      });
+    }
+    return list;
+  }, [activeTab, activeAds, soldAds, expiredAds, searchQuery]);
+
+  // 4. Action: Toggle Sold / Active
+  const handleToggleSold = (part: any) => {
+    const isCurrentlySold = part.sold === true || part.status === 'sold';
+    const actionText = isCurrentlySold ? 'Mark as Active' : 'Mark as Sold';
+    const message = isCurrentlySold
+      ? 'This spare part will be reactivated and visible to buyers in the marketplace feed.'
+      : 'This spare part will be marked as SOLD OUT and will not accept new purchase chats.';
+
+    Alert.alert(actionText, message, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: actionText,
+        style: isCurrentlySold ? 'default' : 'destructive',
+        onPress: async () => {
+          try {
+            // Optimistic update
+            setMyParts((prev) =>
+              prev.map((p) =>
+                p.id === part.id
+                  ? { ...p, sold: !isCurrentlySold, status: !isCurrentlySold ? 'sold' : 'active' }
+                  : p
+              )
+            );
+            const db = getFirebaseFirestore();
+            if (db && typeof db.collection === 'function') {
+              await db.collection('spareParts').doc(part.id).update({
+                sold: !isCurrentlySold,
+                status: !isCurrentlySold ? 'sold' : 'active',
+                updatedAt: Date.now(),
+              });
+              showSuccessToast(isCurrentlySold ? 'Listing marked as Active!' : 'Listing marked as Sold!');
+            }
+          } catch (err: any) {
+            Alert.alert('Error', 'Failed to update status. Please try again.');
+          }
+        },
+      },
+    ]);
+  };
+
+  // 5. Action: Renew / Reactivate Expired Ad
+  const handleRenewExpired = (part: any) => {
+    Alert.alert(
+      'Renew Listing',
+      'Reactivate this listing for another 90 days? It will appear back at the top of the feed.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Renew for 90 Days',
+          onPress: async () => {
+            try {
+              setMyParts((prev) =>
+                prev.map((p) =>
+                  p.id === part.id
+                    ? { ...p, sold: false, status: 'active', createdAt: Date.now() }
+                    : p
+                )
+              );
+              const db = getFirebaseFirestore();
+              if (db && typeof db.collection === 'function') {
+                await db.collection('spareParts').doc(part.id).update({
+                  createdAt: Date.now(),
+                  updatedAt: Date.now(),
+                  sold: false,
+                  status: 'active',
+                });
+                showSuccessToast('Listing renewed for 90 days!');
+              }
+            } catch (err: any) {
+              Alert.alert('Error', 'Failed to renew listing. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Seller Utility 1: Bump Ad to Top
+  const handleBumpAd = async (part: any) => {
+    try {
+      const now = Date.now();
+      setMyParts((prev) =>
+        prev.map((p) => (p.id === part.id ? { ...p, createdAt: now, updatedAt: now } : p))
+      );
+      const db = getFirebaseFirestore();
+      if (db && typeof db.collection === 'function') {
+        await db.collection('spareParts').doc(part.id).update({
+          createdAt: now,
+          updatedAt: now,
+        });
+        showSuccessToast('🚀 Ad bumped to top of fresh recommendations!');
+      }
+    } catch (e) {
+      console.warn('[MyAdsScreen] Bump ad error:', e);
+    }
+  };
+
+  // Seller Utility 2: Share Ad
+  const handleShareAd = async (part: any) => {
+    try {
+      const title = part.title || part.partTitle || 'Auto Spare Part';
+      const price = formatPrice(part.price || part.partPrice);
+      const loc = part.district || part.location || 'India';
+      const message = `🚘 *${title}* for sale on Auto Parts India!\n💰 Price: ${price}\n📍 Location: ${loc}\n\nContact seller directly on Auto Parts India App!`;
+
+      if (Platform.OS === 'web') {
+        if (navigator.share) {
+          await navigator.share({
+            title: title,
+            text: message,
+          });
+        } else if (navigator.clipboard) {
+          await navigator.clipboard.writeText(message);
+          Alert.alert('Copied to Clipboard', 'Ad details copied to clipboard! You can now paste and share it anywhere.');
+        } else {
+          Alert.alert('Share', message);
+        }
+      } else {
+        await Share.share({
+          message: message,
+        });
+      }
+    } catch (e) {
+      console.warn('[MyAdsScreen] Share ad error:', e);
+    }
+  };
+
+  // 6. Action: Delete Ad
+  const handleDeleteListing = (part: any) => {
+    Alert.alert(
+      'Delete Listing',
+      `Are you sure you want to permanently delete "${part.title || 'this listing'}"? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Permanently',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Optimistic deletion
+              setMyParts((prev) => prev.filter((p) => p.id !== part.id));
+              const db = getFirebaseFirestore();
+              if (db && typeof db.collection === 'function') {
+                await db.collection('spareParts').doc(part.id).delete();
+                await db.collection('parts').doc(part.id).delete().catch(() => null);
+                showSuccessToast('Listing permanently deleted.');
+              }
+
+              // Auto-delete all images of this listing from Cloudinary
+              const allImages = (part.images || part.imageUrls || [part.imageUrl, part.image]).filter(Boolean);
+              if (allImages.length > 0) {
+                deleteMultipleImagesFromCloudinary(allImages);
+              }
+            } catch (err: any) {
+              Alert.alert('Error', 'Failed to delete listing. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // 7. Success Banner Toast
+  const showSuccessToast = (msg: string) => {
+    setActionSuccessMessage(msg);
+    setTimeout(() => {
+      setActionSuccessMessage(null);
+    }, 3000);
+  };
+
+  // 8. Format INR Currency
+  const formatPrice = (price: any) => {
+    const num = Number(price) || 0;
+    return `₹${num.toLocaleString('en-IN')}`;
+  };
+
+  // 9. Format Date
+  const formatDate = (timestamp: any) => {
+    if (!timestamp) return '';
+    try {
+      const date = new Date(timestamp);
+      return date.toLocaleDateString('en-IN', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    } catch (_) {
+      return '';
+    }
+  };
+
+  // 10. Render Empty State
+  const renderEmptyState = () => {
+    if (loading) return null;
+
+    if (!currentUser) {
+      return (
+        <View style={styles.emptyContainer}>
+          <View style={styles.emptyIconCircle}>
+            <Icon source="account-lock-outline" size={44} color="#0066FF" />
+          </View>
+          <Text style={styles.emptyTitle}>Sign In Required</Text>
+          <Text style={styles.emptySubtitle}>
+            Please sign in to view, edit, and manage all your uploaded auto spare parts ads.
+          </Text>
+          <TouchableOpacity
+            style={styles.emptyActionBtn}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('Auth')}
+          >
+            <Icon source="login" size={18} color="#FFFFFF" />
+            <Text style={styles.emptyActionBtnText}>Sign In to Account</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    if (searchQuery.trim()) {
+      return (
+        <View style={styles.emptyContainer}>
+          <View style={styles.emptyIconCircle}>
+            <Icon source="file-search-outline" size={40} color="#64748B" />
+          </View>
+          <Text style={styles.emptyTitle}>No Ads Found</Text>
+          <Text style={styles.emptySubtitle}>
+            No listings matched "{searchQuery}". Try clearing your search query.
+          </Text>
+          <TouchableOpacity
+            style={styles.clearSearchBtn}
+            activeOpacity={0.8}
+            onPress={() => setSearchQuery('')}
+          >
+            <Text style={styles.clearSearchBtnText}>Clear Search</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    if (activeTab === 'active') {
+      return (
+        <View style={styles.emptyContainer}>
+          <View style={styles.emptyIconCircle}>
+            <Icon source="tag-outline" size={44} color="#0066FF" />
+          </View>
+          <Text style={styles.emptyTitle}>No Active Ads</Text>
+          <Text style={styles.emptySubtitle}>
+            You do not have any active ads right now. Post high-quality spare parts to reach verified buyers across India.
+          </Text>
+          <TouchableOpacity
+            style={styles.emptyActionBtn}
+            activeOpacity={0.85}
+            onPress={() => {
+              if (navigation?.navigate) {
+                navigation.navigate('MainTabs', { screen: 'SellTab' });
+              }
+            }}
+          >
+            <Icon source="plus-circle" size={18} color="#FFFFFF" />
+            <Text style={styles.emptyActionBtnText}>Post a Spare Part</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    if (activeTab === 'sold') {
+      return (
+        <View style={styles.emptyContainer}>
+          <View style={[styles.emptyIconCircle, { backgroundColor: '#FEE2E2' }]}>
+            <Icon source="check-decagram-outline" size={44} color="#DC2626" />
+          </View>
+          <Text style={styles.emptyTitle}>No Sold Ads</Text>
+          <Text style={styles.emptySubtitle}>
+            You have not marked any automobile parts as sold yet. When a part is purchased, mark it as sold to track your deals!
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.emptyContainer}>
+        <View style={[styles.emptyIconCircle, { backgroundColor: '#FEF3C7' }]}>
+          <Icon source="clock-alert-outline" size={44} color="#D97706" />
+        </View>
+        <Text style={styles.emptyTitle}>No Expired Ads</Text>
+        <Text style={styles.emptySubtitle}>
+          All your uploaded ads remain fresh and fully active for 90 days. Expired ads will appear here for one-click renewal.
+        </Text>
+      </View>
+    );
+  };
+
+  // 11. Render Single Ad Item
+  const renderAdItem = ({ item }: { item: any }) => {
+    const isSold = item.sold === true || item.status === 'sold';
+    const isExpired = !isSold && now - (item.createdAt || now) > NINETY_DAYS_MS;
+    const rawUrl = item.imageUrl || (item.images && item.images[0]) || '';
+    const imageUrl = rawUrl ? getOptimizedImageUrl(rawUrl, 300, 300) : '';
+
+    return (
+      <Surface style={styles.adCard} elevation={1}>
+        {/* Card Main Body (Clickable to view Product Detail) */}
+        <ScalePressable
+          scaleTo={0.97}
+          style={styles.cardHeaderArea}
+          onPress={() => navigation.navigate('ProductDetail', { part: item })}
+        >
+          {/* Thumbnail with Status Overlay */}
+          <View style={styles.imageWrapper}>
+            {imageUrl ? (
+              <Image source={{ uri: imageUrl }} style={styles.adImage} resizeMode="cover" />
+            ) : (
+              <View style={styles.imagePlaceholder}>
+                <Icon source="car-wrench" size={28} color="#94A3B8" />
+              </View>
+            )}
+
+            {isSold && (
+              <View style={styles.soldBadgeOverlay}>
+                <Text style={styles.soldBadgeText}>SOLD</Text>
+              </View>
+            )}
+
+            {isExpired && !isSold && (
+              <View style={styles.expiredBadgeOverlay}>
+                <Text style={styles.expiredBadgeText}>EXPIRED</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Ad Info */}
+          <View style={styles.adInfoArea}>
+            <View>
+              <Text style={styles.adBrandTag} numberOfLines={1}>
+                {item.carBrand || 'Auto'} {item.carModel ? `· ${item.carModel}` : ''}
+              </Text>
+              <Text style={styles.adTitle} numberOfLines={2}>
+                {item.title || 'Automobile Spare Part'}
+              </Text>
+            </View>
+
+            <View style={styles.metaRow}>
+              <Text style={styles.adPrice}>{formatPrice(item.price || item.partPrice)}</Text>
+              {item.condition && (
+                <View style={[
+                  styles.conditionPill,
+                  item.condition.toLowerCase().includes('new') ? styles.pillNew : styles.pillUsed
+                ]}>
+                  <Text style={[
+                    styles.conditionText,
+                    item.condition.toLowerCase().includes('new') ? styles.textNew : styles.textUsed
+                  ]}>
+                    {item.condition.toLowerCase().includes('new') ? '✨ NEW' : 'USED'}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Location & Date */}
+            <View style={styles.subMetaRow}>
+              <View style={styles.locationWrap}>
+                <Icon source="map-marker-outline" size={12} color="#64748B" />
+                <Text style={styles.locationText} numberOfLines={1}>
+                  {item.location || item.district || 'India'}
+                </Text>
+              </View>
+              <Text style={styles.dateText}>{formatDate(item.createdAt)}</Text>
+            </View>
+
+            {/* Views Metric Badge (Visible only to seller in My Ads) */}
+            <View style={styles.adMetricsRow}>
+              <View style={styles.viewsBadge}>
+                <Icon source="eye-outline" size={13} color="#0066FF" />
+                <Text style={styles.viewsBadgeText}>{item.views || item.viewCount || 0} Views</Text>
+              </View>
+            </View>
+          </View>
+        </ScalePressable>
+
+        {/* Action Buttons Toolbar */}
+        <View style={styles.cardActionsToolbar}>
+          {activeTab === 'active' && (
+            <>
+              <TouchableOpacity
+                style={styles.actionBtnOutline}
+                activeOpacity={0.7}
+                onPress={() => handleShareAd(item)}
+              >
+                <Icon source="share-variant-outline" size={15} color="#0066FF" />
+                <Text style={styles.actionBtnOutlineText}>Share</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionBtnOutline}
+                activeOpacity={0.7}
+                onPress={() => {
+                  navigation.navigate('EditListing', {
+                    part: item,
+                    onUpdated: (updatedPart: any) => {
+                      setMyParts((prev) =>
+                        prev.map((p) => (p.id === updatedPart.id ? { ...p, ...updatedPart } : p))
+                      );
+                      showSuccessToast('Listing updated successfully!');
+                    },
+                  });
+                }}
+              >
+                <Icon source="pencil-outline" size={15} color="#0066FF" />
+                <Text style={styles.actionBtnOutlineText}>Edit</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionBtnPrimary}
+                activeOpacity={0.7}
+                onPress={() => handleToggleSold(item)}
+              >
+                <Icon source="check-circle-outline" size={15} color="#FFFFFF" />
+                <Text style={styles.actionBtnPrimaryText}>Mark Sold</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionBtnDelete}
+                activeOpacity={0.7}
+                onPress={() => handleDeleteListing(item)}
+              >
+                <Icon source="trash-can-outline" size={16} color="#DC2626" />
+              </TouchableOpacity>
+            </>
+          )}
+
+          {activeTab === 'sold' && (
+            <>
+              <View style={styles.soldStatusPill}>
+                <Icon source="check-decagram" size={14} color="#DC2626" />
+                <Text style={styles.soldStatusPillText}>Sold Out</Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.actionBtnOutline}
+                activeOpacity={0.7}
+                onPress={() => {
+                  navigation.navigate('EditListing', {
+                    part: item,
+                    onUpdated: (updatedPart: any) => {
+                      setMyParts((prev) =>
+                        prev.map((p) => (p.id === updatedPart.id ? { ...p, ...updatedPart } : p))
+                      );
+                      showSuccessToast('Listing updated successfully!');
+                    },
+                  });
+                }}
+              >
+                <Icon source="pencil-outline" size={15} color="#0066FF" />
+                <Text style={styles.actionBtnOutlineText}>Edit</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionBtnSuccess}
+                activeOpacity={0.7}
+                onPress={() => handleToggleSold(item)}
+              >
+                <Icon source="refresh" size={15} color="#FFFFFF" />
+                <Text style={styles.actionBtnSuccessText}>Mark Active</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionBtnDelete}
+                activeOpacity={0.7}
+                onPress={() => handleDeleteListing(item)}
+              >
+                <Icon source="trash-can-outline" size={16} color="#DC2626" />
+              </TouchableOpacity>
+            </>
+          )}
+
+          {activeTab === 'expired' && (
+            <>
+              <View style={styles.expiredStatusPill}>
+                <Icon source="clock-alert" size={14} color="#D97706" />
+                <Text style={styles.expiredStatusPillText}>Expired</Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.actionBtnPrimary}
+                activeOpacity={0.7}
+                onPress={() => handleRenewExpired(item)}
+              >
+                <Icon source="autorenew" size={15} color="#FFFFFF" />
+                <Text style={styles.actionBtnPrimaryText}>Renew (90 Days)</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionBtnDelete}
+                activeOpacity={0.7}
+                onPress={() => handleDeleteListing(item)}
+              >
+                <Icon source="trash-can-outline" size={16} color="#DC2626" />
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      </Surface>
+    );
+  };
+
+  return (
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      {/* 1. TOP HEADER */}
+      <View style={styles.headerBar}>
+        <View style={styles.headerTitleWrap}>
+          <Text style={styles.headerTitle}>My Ads</Text>
+          <View style={styles.totalBadge}>
+            <Text style={styles.totalBadgeText}>{myParts.length}</Text>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={styles.postNewAdBtn}
+          activeOpacity={0.85}
+          onPress={() => {
+            if (navigation?.navigate) {
+              navigation.navigate('MainTabs', { screen: 'SellTab' });
+            }
+          }}
+        >
+          <Icon source="plus" size={16} color="#FFFFFF" />
+          <Text style={styles.postNewAdBtnText}>+ Post Part</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* 2. SUCCESS FEEDBACK TOAST */}
+      {actionSuccessMessage && (
+        <View style={styles.successToast}>
+          <Icon source="check-circle" size={16} color="#16A34A" />
+          <Text style={styles.successToastText}>{actionSuccessMessage}</Text>
+        </View>
+      )}
+
+      {/* 3. SEGMENTED TABS (Active, Sold, Expired) */}
+      <View style={styles.tabSegmentsContainer}>
+        <TouchableOpacity
+          style={[styles.segmentBtn, activeTab === 'active' && styles.segmentBtnActive]}
+          onPress={() => setActiveTab('active')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.segmentBtnText, activeTab === 'active' && styles.segmentBtnTextActive]}>
+            Active
+          </Text>
+          <View style={[styles.segmentCountPill, activeTab === 'active' && styles.segmentCountPillActive]}>
+            <Text style={[styles.segmentCountText, activeTab === 'active' && styles.segmentCountTextActive]}>
+              {activeAds.length}
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.segmentBtn, activeTab === 'sold' && styles.segmentBtnActive]}
+          onPress={() => setActiveTab('sold')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.segmentBtnText, activeTab === 'sold' && styles.segmentBtnTextActive]}>
+            Sold
+          </Text>
+          <View style={[styles.segmentCountPill, activeTab === 'sold' && styles.segmentCountPillActive]}>
+            <Text style={[styles.segmentCountText, activeTab === 'sold' && styles.segmentCountTextActive]}>
+              {soldAds.length}
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.segmentBtn, activeTab === 'expired' && styles.segmentBtnActive]}
+          onPress={() => setActiveTab('expired')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.segmentBtnText, activeTab === 'expired' && styles.segmentBtnTextActive]}>
+            Expired
+          </Text>
+          <View style={[styles.segmentCountPill, activeTab === 'expired' && styles.segmentCountPillActive]}>
+            <Text style={[styles.segmentCountText, activeTab === 'expired' && styles.segmentCountTextActive]}>
+              {expiredAds.length}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      {/* 4. SEARCH WITHIN MY ADS */}
+      {myParts.length > 0 && (
+        <View style={styles.searchBarWrap}>
+          <Icon source="magnify" size={18} color="#64748B" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder={`Search within ${activeTab} ads...`}
+            placeholderTextColor="#94A3B8"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            clearButtonMode="while-editing"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Icon source="close-circle" size={16} color="#94A3B8" />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
+      {/* 5. ADS LIST */}
+      {loading ? (
+        <ListFeedSkeleton count={4} />
+      ) : (
+        <FlatList
+          data={filteredAds}
+          keyExtractor={(item) => item.id}
+          renderItem={renderAdItem}
+          ListEmptyComponent={renderEmptyState}
+          contentContainerStyle={[
+            styles.listContent,
+            filteredAds.length === 0 && { flex: 1, justifyContent: 'center' },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          bounces={true}
+          alwaysBounceVertical={true}
+          decelerationRate="normal"
+          overScrollMode="never"
+          removeClippedSubviews={Platform.OS === 'android'}
+          initialNumToRender={8}
+          maxToRenderPerBatch={10}
+          windowSize={7}
+          updateCellsBatchingPeriod={50}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#0066FF']}
+              tintColor="#0066FF"
+            />
+          }
+          showsVerticalScrollIndicator={false}
+        />
+      )}
+
+      {/* 6. EDIT LISTING MODAL */}
+      {isEditModalOpen && (
+        <EditListingModal
+          visible={isEditModalOpen}
+          listing={selectedPartToEdit}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setSelectedPartToEdit(null);
+          }}
+          onSuccess={() => {
+            showSuccessToast('Listing updated successfully!');
+            onRefresh();
+          }}
+        />
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
+  headerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  headerTitleWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.4,
+  },
+  totalBadge: {
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  totalBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0066FF',
+  },
+  postNewAdBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#0066FF',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    shadowColor: '#0066FF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.22,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  postNewAdBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  successToast: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#DCFCE7',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    marginHorizontal: 16,
+    marginTop: 8,
+    borderRadius: 10,
+  },
+  successToastText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#15803D',
+  },
+  tabSegmentsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 10,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  segmentBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 9,
+    borderRadius: 20,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  segmentBtnActive: {
+    backgroundColor: '#0066FF',
+    borderColor: '#0066FF',
+    shadowColor: '#0066FF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  segmentBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  segmentBtnTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  segmentCountPill: {
+    backgroundColor: '#E2E8F0',
+    paddingHorizontal: 7,
+    paddingVertical: 1.5,
+    borderRadius: 10,
+  },
+  segmentCountPillActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+  },
+  segmentCountText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#475569',
+  },
+  segmentCountTextActive: {
+    color: '#FFFFFF',
+  },
+  searchBarWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    marginTop: 10,
+    marginBottom: 4,
+    paddingHorizontal: 14,
+    paddingVertical: Platform.OS === 'ios' ? 10 : 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 8,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 13,
+    color: '#0F172A',
+    padding: 0,
+  },
+  listContent: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 32,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+  },
+  loadingText: {
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  adCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    marginBottom: 14,
+    overflow: 'hidden',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  cardHeaderArea: {
+    flexDirection: 'row',
+    padding: 12,
+    gap: 12,
+  },
+  imageWrapper: {
+    width: 90,
+    height: 90,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  adImage: {
+    width: '100%',
+    height: '100%',
+  },
+  imagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F8FAFC',
+  },
+  soldBadgeOverlay: {
+    position: 'absolute',
+    inset: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  soldBadgeText: {
+    backgroundColor: '#DC2626',
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    letterSpacing: 0.5,
+  },
+  expiredBadgeOverlay: {
+    position: 'absolute',
+    inset: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  expiredBadgeText: {
+    backgroundColor: '#D97706',
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    letterSpacing: 0.5,
+  },
+  adInfoArea: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  adBrandTag: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0066FF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  adTitle: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginTop: 2,
+    lineHeight: 18,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  adPrice: {
+    fontSize: 15.5,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  conditionPill: {
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+  },
+  pillNew: {
+    backgroundColor: '#ECFDF5',
+  },
+  pillUsed: {
+    backgroundColor: '#F1F5F9',
+  },
+  conditionText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  textNew: {
+    color: '#059669',
+  },
+  textUsed: {
+    color: '#475569',
+  },
+  subMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  locationWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    flex: 1,
+  },
+  locationText: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  dateText: {
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '500',
+  },
+  adMetricsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 5,
+  },
+  viewsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+  },
+  viewsBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0066FF',
+  },
+  cardActionsToolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#FAFAFC',
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  actionBtnOutline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#EFF6FF',
+  },
+  actionBtnOutlineText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#0066FF',
+  },
+  actionBtnPrimary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#0066FF',
+  },
+  actionBtnPrimaryText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  actionBtnSuccess: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#16A34A',
+  },
+  actionBtnSuccessText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  actionBtnDelete: {
+    padding: 7,
+    borderRadius: 8,
+    backgroundColor: '#FEF2F2',
+    marginLeft: 'auto',
+  },
+  soldStatusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  soldStatusPillText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#DC2626',
+    textTransform: 'uppercase',
+  },
+  expiredStatusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  expiredStatusPillText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#D97706',
+    textTransform: 'uppercase',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+    paddingVertical: 40,
+  },
+  emptyIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 19,
+    marginBottom: 20,
+  },
+  emptyActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#0066FF',
+    paddingVertical: 11,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    shadowColor: '#0066FF',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  emptyActionBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  clearSearchBtn: {
+    backgroundColor: '#F1F5F9',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 0,
+    borderColor: '#E2E8F0',
+  },
+  clearSearchBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#475569',
+  },
+});

@@ -1,0 +1,390 @@
+import React, { useState } from "react";
+import { 
+  ArrowLeft, 
+  Bell, 
+  BellOff, 
+  CheckCheck, 
+  Megaphone, 
+  RefreshCw, 
+  Sparkles, 
+  Clock, 
+  Check, 
+  ShieldCheck, 
+  AlertCircle,
+  Trash2
+} from "lucide-react";
+import { Announcement, User } from "../types";
+import { 
+  markAnnouncementAsRead, 
+  markAllAnnouncementsAsRead, 
+  deleteAnnouncementForUser, 
+  deleteAllAnnouncementsForUser 
+} from "../lib/firebase";
+
+interface NotificationsScreenProps {
+  announcements?: Announcement[];
+  isLoading?: boolean;
+  currentUser?: User | null;
+  onBack: () => void;
+}
+
+export default function NotificationsScreen({
+  announcements = [],
+  isLoading = false,
+  currentUser = null,
+  onBack
+}: NotificationsScreenProps) {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [confirmClearAll, setConfirmClearAll] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(() => {
+    try {
+      const rawNotifs = localStorage.getItem("autoparts_deleted_notifications") || "[]";
+      const rawAnns = localStorage.getItem("autoparts_deleted_announcements") || "[]";
+      const parsedNotifs = JSON.parse(rawNotifs);
+      const parsedAnns = JSON.parse(rawAnns);
+      return new Set<string>([
+        ...(Array.isArray(parsedNotifs) ? parsedNotifs : []),
+        ...(Array.isArray(parsedAnns) ? parsedAnns : [])
+      ]);
+    } catch (_) {
+      return new Set<string>();
+    }
+  });
+
+  const safeAnnouncements = Array.isArray(announcements) 
+    ? announcements.filter((a) => a && typeof a === "object" && a.id) 
+    : [];
+
+  const visibleAnnouncements = safeAnnouncements.filter((a) => !deletedIds.has(a.id));
+  const unreadList = visibleAnnouncements.filter((a) => !a.isRead);
+  const unreadCount = unreadList.length;
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 600);
+  };
+
+  const handleMarkAsRead = async (annId: string) => {
+    if (!annId) return;
+    try {
+      await markAnnouncementAsRead(currentUser?.id || null, annId);
+    } catch (e) {
+      console.warn("Failed to mark announcement as read:", e);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    const unreadIds = unreadList.map((a) => a.id).filter(Boolean);
+    if (unreadIds.length > 0) {
+      try {
+        await markAllAnnouncementsAsRead(currentUser?.id || null, unreadIds);
+      } catch (e) {
+        console.warn("Failed to mark all announcements as read:", e);
+      }
+    }
+  };
+
+  const handleDeleteOne = async (e: React.MouseEvent, annId: string) => {
+    e.stopPropagation();
+    if (!annId) return;
+    setDeletedIds((prev) => new Set([...prev, annId]));
+    try {
+      await deleteAnnouncementForUser(currentUser?.id || null, annId);
+    } catch (err) {
+      console.warn("Failed to delete announcement:", err);
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (visibleAnnouncements.length === 0) return;
+    const allIds = visibleAnnouncements.map((a) => a.id).filter(Boolean);
+    setDeletedIds((prev) => new Set([...prev, ...allIds]));
+    setConfirmClearAll(false);
+    try {
+      await deleteAllAnnouncementsForUser(currentUser?.id || null, allIds);
+    } catch (err) {
+      console.warn("Failed to clear all announcements:", err);
+    }
+  };
+
+  const parseSafeTime = (timestamp: any): number => {
+    if (!timestamp) return 0;
+    try {
+      if (typeof timestamp === "number" && !isNaN(timestamp) && timestamp > 0) {
+        return timestamp;
+      }
+      if (typeof timestamp?.toMillis === "function") {
+        return timestamp.toMillis();
+      }
+      if (typeof timestamp?.seconds === "number") {
+        return timestamp.seconds * 1000;
+      }
+      if (typeof timestamp === "string") {
+        const parsed = new Date(timestamp).getTime();
+        return isNaN(parsed) ? 0 : parsed;
+      }
+    } catch (_) {}
+    return 0;
+  };
+
+  const formatRelativeTime = (timestamp: any) => {
+    const time = parseSafeTime(timestamp);
+    if (!time || isNaN(time) || time <= 0) return "Recently";
+    
+    try {
+      const diff = Math.max(0, Date.now() - time);
+      const mins = Math.floor(diff / (1000 * 60));
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+      if (mins < 1) return "Just now";
+      if (mins < 60) return `${mins}m ago`;
+      if (hours < 24) return `${hours}h ago`;
+      if (days < 7) return `${days}d ago`;
+
+      const d = new Date(time);
+      if (isNaN(d.getTime())) return "Recently";
+
+      return d.toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric"
+      });
+    } catch (_) {
+      return "Recently";
+    }
+  };
+
+  return (
+    <div className="flex-1 flex flex-col bg-slate-50 text-slate-900 min-h-screen relative" id="notifications-screen">
+      {/* Sticky Top Bar / App Bar */}
+      <div className="bg-[#0F172A] text-white sticky top-0 z-30 shadow-md border-b border-slate-800">
+        <div className="max-w-4xl mx-auto px-4 py-3 flex flex-row items-center justify-between gap-3">
+          <div className="flex flex-row items-center gap-3">
+            <button
+              onClick={onBack}
+              className="p-2 -ml-1 rounded-full text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
+              id="notifications-back-btn"
+            >
+              <ArrowLeft size={20} className="text-slate-200" />
+            </button>
+            <div className="flex flex-row items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-blue-500/20 text-blue-400">
+                <Bell size={18} className="text-blue-400" />
+              </div>
+              <div>
+                <h1 className="text-base font-bold text-white leading-tight">Notifications</h1>
+                <p className="text-[11px] text-slate-400">System broadcasts & announcements</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-row items-center gap-2">
+            {unreadCount > 0 && (
+              <button
+                onClick={handleMarkAllAsRead}
+                className="flex flex-row items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-full shadow-xs transition-colors cursor-pointer"
+                id="mark-all-read-btn"
+              >
+                <CheckCheck size={14} className="text-white" />
+                <span className="text-xs font-semibold text-white">Mark all read</span>
+              </button>
+            )}
+
+            {visibleAnnouncements.length > 0 && (
+              <button
+                onClick={() => setConfirmClearAll(true)}
+                className="flex flex-row items-center gap-1.5 bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 px-3 py-1.5 rounded-full transition-colors cursor-pointer"
+                id="clear-all-notifs-btn"
+                title="Clear all notifications"
+              >
+                <Trash2 size={13} className="text-rose-400" />
+                <span className="text-xs font-semibold text-rose-400">Clear all</span>
+              </button>
+            )}
+
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="p-2 rounded-full text-slate-300 hover:bg-slate-800 transition-colors cursor-pointer"
+              id="notifications-refresh-btn"
+            >
+              <RefreshCw size={18} className={isRefreshing ? "text-blue-400 animate-spin" : "text-slate-300"} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Clear All In-App Confirmation Banner */}
+      {confirmClearAll && (
+        <div className="max-w-4xl w-full mx-auto px-4 pt-3">
+          <div className="bg-rose-50 border border-rose-200 rounded-2xl p-3 flex flex-row items-center justify-between gap-3 shadow-xs animate-in fade-in">
+            <div className="flex items-center gap-2 text-rose-900 text-xs font-semibold">
+              <AlertCircle size={16} className="text-rose-600 shrink-0" />
+              <span>Clear all {visibleAnnouncements.length} notifications?</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setConfirmClearAll(false)}
+                className="px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-200/60 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleClearAll}
+                className="px-3 py-1 text-xs font-bold bg-rose-600 text-white rounded-lg hover:bg-rose-700 shadow-2xs"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content Area */}
+      <div className="flex-1 max-w-4xl w-full mx-auto px-3 sm:px-4 py-4 space-y-3 pb-24 overflow-y-auto">
+        {/* Unread Status Banner */}
+        {unreadCount > 0 && (
+          <div className="bg-blue-50 border border-blue-200/80 rounded-2xl p-3.5 flex flex-row items-center justify-between text-blue-900 shadow-xs mb-3">
+            <div className="flex flex-row items-center gap-2.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse" />
+              <span className="text-xs font-semibold text-blue-900">
+                You have {unreadCount} unread {unreadCount === 1 ? "notification" : "notifications"}
+              </span>
+            </div>
+            <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider bg-blue-100/80 px-2 py-0.5 rounded-md">
+              Real-time
+            </span>
+          </div>
+        )}
+
+        {/* Loading Skeleton */}
+        {isLoading ? (
+          <div className="space-y-3 py-2">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-white rounded-2xl p-4 border border-slate-100 shadow-2xs space-y-3">
+                <div className="flex flex-row items-center justify-between">
+                  <div className="h-4 bg-slate-200 rounded-md w-1/3 animate-pulse" />
+                  <div className="h-3 bg-slate-100 rounded-md w-16 animate-pulse" />
+                </div>
+                <div className="h-3 bg-slate-100 rounded-md w-3/4 animate-pulse" />
+                <div className="h-3 bg-slate-100 rounded-md w-1/2 animate-pulse" />
+              </div>
+            ))}
+          </div>
+        ) : visibleAnnouncements.length === 0 ? (
+          /* Empty State */
+          <div
+            className="bg-white rounded-2xl border border-slate-100 shadow-2xs p-8 text-center flex flex-col items-center justify-center my-8 space-y-3"
+            id="notifications-empty-state"
+          >
+            <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-1">
+              <BellOff size={28} className="text-slate-400" />
+            </div>
+            <h3 className="text-base font-bold text-slate-800">No Notifications</h3>
+            <p className="text-xs text-slate-500 text-center max-w-sm">
+              All notifications have been cleared or you have no new updates right now.
+            </p>
+          </div>
+        ) : (
+          /* Notifications List */
+          <div className="space-y-3">
+            {visibleAnnouncements.map((ann) => {
+              const isUnread = !ann.isRead;
+              const title = ann.title || "System Notification";
+              const text = ann.text || ann.message || "";
+              return (
+                <div
+                  key={ann.id}
+                  onClick={() => isUnread && handleMarkAsRead(ann.id)}
+                  className={`rounded-2xl p-4 border transition-all cursor-pointer ${
+                    isUnread
+                      ? "bg-blue-50/70 border-blue-200/90 shadow-2xs hover:bg-blue-50"
+                      : "bg-white border-slate-200/80 hover:border-slate-300"
+                  }`}
+                  id={`notification-card-${ann.id}`}
+                >
+                  <div className="flex flex-row items-start gap-3">
+                    {/* Left Icon Badge */}
+                    <div
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                        isUnread
+                          ? "bg-blue-600 text-white"
+                          : "bg-slate-100 text-slate-500"
+                      }`}
+                    >
+                      <Megaphone size={18} className={isUnread ? "text-white" : "text-slate-500"} />
+                    </div>
+
+                    {/* Main Text Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-row items-start justify-between gap-2">
+                        <div className="flex flex-row items-center gap-2 flex-1">
+                          <h4 className={`text-xs font-bold ${isUnread ? "text-slate-900" : "text-slate-700"}`}>
+                            {title}
+                          </h4>
+                          {isUnread && (
+                            <span className="text-[10px] font-bold bg-blue-600 text-white px-2 py-0.5 rounded-full">
+                              NEW
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-row items-center gap-2 shrink-0">
+                          <span className="text-[11px] font-medium text-slate-400">
+                            {formatRelativeTime(ann.createdAt)}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeleteOne(e, ann.id)}
+                            className="p-1 rounded-md text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+                            title="Delete this notification"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+
+                      <p className={`text-xs mt-1.5 leading-relaxed ${isUnread ? "text-slate-800 font-medium" : "text-slate-600"}`}>
+                        {text}
+                      </p>
+
+                      <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-row items-center justify-between text-[11px]">
+                        <div className="flex flex-row items-center gap-1.5 text-slate-400">
+                          <ShieldCheck size={12} className="text-blue-500" />
+                          <span className="text-[11px] text-slate-400">System Administrator</span>
+                        </div>
+
+                        {isUnread ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMarkAsRead(ann.id);
+                            }}
+                            className="flex flex-row items-center gap-1 text-blue-600 hover:text-blue-700 font-bold text-[11px] cursor-pointer"
+                          >
+                            <Check size={12} />
+                            <span>Mark as read</span>
+                          </button>
+                        ) : (
+                          <div className="flex flex-row items-center gap-1">
+                            <CheckCheck size={12} className="text-emerald-500" />
+                            <span className="text-slate-400 text-[11px]">Read</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

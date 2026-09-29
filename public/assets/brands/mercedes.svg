@@ -1,0 +1,27 @@
+<svg viewBox="0 0 200 200" width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="mbChrome" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8FAFC" />
+      <stop offset="30%" stop-color="#94A3B8" />
+      <stop offset="70%" stop-color="#475569" />
+      <stop offset="100%" stop-color="#1E293B" />
+    </linearGradient>
+  </defs>
+  <!-- Official Mercedes-Benz 3-Point Star Emblem -->
+  <g transform="translate(20, 20) scale(0.8)">
+    <!-- Outer Chrome Ring -->
+    <circle cx="100" cy="100" r="92" fill="none" stroke="url(#mbChrome)" stroke-width="10"/>
+    <!-- 3-Point Star -->
+    <!-- Top Point -->
+    <path d="M 100 100 L 100 16 L 95 100 Z" fill="#94A3B8"/>
+    <path d="M 100 100 L 100 16 L 105 100 Z" fill="#334155"/>
+    <!-- Bottom Right Point -->
+    <path d="M 100 100 L 174 142 L 104 105 Z" fill="#94A3B8"/>
+    <path d="M 100 100 L 174 142 L 98 96 Z" fill="#334155"/>
+    <!-- Bottom Left Point -->
+    <path d="M 100 100 L 26 142 L 96 96 Z" fill="#94A3B8"/>
+    <path d="M 100 100 L 26 142 L 102 105 Z" fill="#334155"/>
+    <!-- Center Hub -->
+    <circle cx="100" cy="100" r="8" fill="url(#mbChrome)"/>
+  </g>
+</svg>

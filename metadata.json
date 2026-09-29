@@ -1,0 +1,10 @@
+{
+  "name": "Auto Parts India",
+  "description": "A fully functional C2C marketplace for buying and selling genuine car spare parts in India with user authentication, listing creation, direct chat, and search/filtering.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

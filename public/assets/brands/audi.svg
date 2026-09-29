@@ -1,0 +1,21 @@
+<svg viewBox="0 0 200 200" width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="audiChrome" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E2E8F0" />
+      <stop offset="35%" stop-color="#94A3B8" />
+      <stop offset="70%" stop-color="#475569" />
+      <stop offset="100%" stop-color="#1E293B" />
+    </linearGradient>
+  </defs>
+  <!-- Official Audi 4 Interlocking Rings Emblem -->
+  <g transform="translate(10, 60) scale(0.9)">
+    <!-- Ring 1 -->
+    <circle cx="36" cy="45" r="28" fill="none" stroke="url(#audiChrome)" stroke-width="7"/>
+    <!-- Ring 2 -->
+    <circle cx="78" cy="45" r="28" fill="none" stroke="url(#audiChrome)" stroke-width="7"/>
+    <!-- Ring 3 -->
+    <circle cx="120" cy="45" r="28" fill="none" stroke="url(#audiChrome)" stroke-width="7"/>
+    <!-- Ring 4 -->
+    <circle cx="162" cy="45" r="28" fill="none" stroke="url(#audiChrome)" stroke-width="7"/>
+  </g>
+</svg>

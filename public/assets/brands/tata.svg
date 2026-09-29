@@ -1,0 +1,25 @@
+
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="tataBlue" x1="0" y1="0" x2="256" y2="256">
+      <stop offset="0%" stop-color="#0066B2"/>
+      <stop offset="100%" stop-color="#003366"/>
+    </linearGradient>
+    <linearGradient id="tataWhite" x1="0" y1="0" x2="0" y2="256">
+      <stop offset="0%" stop-color="#0284C7"/>
+      <stop offset="100%" stop-color="#0369A1"/>
+    </linearGradient>
+  </defs>
+  
+  <g>
+    <!-- Outer Oval Ring -->
+    <path d="M 128,48 C 66,48 24,84 24,128 C 24,172 66,208 128,208 C 190,208 232,172 232,128 C 232,84 190,48 128,48 Z M 128,66 C 178,66 212,94 212,128 C 212,162 178,190 128,190 C 78,190 44,162 44,128 C 44,94 78,66 128,66 Z" fill="url(#tataWhite)"/>
+    
+    <!-- Left Flowing T-Wing -->
+    <path d="M 72,106 C 96,106 114,124 122,158 C 114,142 100,126 72,126 Z" fill="url(#tataWhite)"/>
+    <!-- Right Flowing T-Wing -->
+    <path d="M 184,106 C 160,106 142,124 134,158 C 142,142 156,126 184,126 Z" fill="url(#tataWhite)"/>
+    <!-- Center Dividing Spine -->
+    <path d="M 128,88 L 128,172" stroke="url(#tataWhite)" stroke-width="12" stroke-linecap="round"/>
+  </g>
+</svg>

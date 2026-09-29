@@ -1,0 +1,31 @@
+
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="suzukiRed" x1="0" y1="0" x2="256" y2="256" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#E11D48"/>
+      <stop offset="100%" stop-color="#BE123C"/>
+    </linearGradient>
+    <linearGradient id="suzukiChrome" x1="50" y1="30" x2="206" y2="226" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="25%" stop-color="#E2E8F0"/>
+      <stop offset="50%" stop-color="#94A3B8"/>
+      <stop offset="75%" stop-color="#CBD5E1"/>
+      <stop offset="100%" stop-color="#64748B"/>
+    </linearGradient>
+    <linearGradient id="suzukiBlue" x1="0" y1="0" x2="0" y2="256">
+      <stop offset="0%" stop-color="#002D62"/>
+      <stop offset="100%" stop-color="#001A38"/>
+    </linearGradient>
+    <filter id="brandShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+  
+  <g filter="url(#brandShadow)">
+    <!-- Iconic Suzuki 'S' Geometry -->
+    <!-- Top Wing -->
+    <path d="M 52,42 L 204,42 L 148,96 L 204,96 L 140,158 L 74,158 L 126,106 L 52,106 Z" fill="#E11D48"/>
+    <!-- Bottom Wing -->
+    <path d="M 204,214 L 52,214 L 108,160 L 52,160 L 116,98 L 182,98 L 130,150 L 204,150 Z" fill="#002D62"/>
+  </g>
+</svg>

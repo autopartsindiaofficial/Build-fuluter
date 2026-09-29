@@ -1,0 +1,12 @@
+
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g>
+    <!-- Continuous KIA ribbon logo -->
+    <path d="
+      M 32,168 L 56,88 L 76,88 L 60,140 L 98,88 L 120,88 L 94,122 L 126,168 L 102,168 L 78,132 L 68,146 L 62,168 Z
+      M 130,88 L 150,88 L 150,168 L 130,168 Z
+      M 160,168 L 184,88 L 204,88 L 228,168 L 206,168 L 200,146 L 182,146 L 176,168 Z
+      M 186,130 L 196,130 L 191,108 Z
+    " fill="#0F172A"/>
+  </g>
+</svg>

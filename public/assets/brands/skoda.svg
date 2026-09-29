@@ -1,0 +1,26 @@
+<svg viewBox="0 0 200 200" width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="skodaEmerald" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0E3A2F" />
+      <stop offset="100%" stop-color="#145A48" />
+    </linearGradient>
+    <linearGradient id="skodaElectric" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#78FAAE" />
+      <stop offset="100%" stop-color="#2BE87D" />
+    </linearGradient>
+  </defs>
+  <!-- Official Skoda Winged Arrow Emblem -->
+  <g transform="translate(20, 20) scale(0.8)">
+    <!-- Outer Emerald Circle -->
+    <circle cx="100" cy="100" r="92" fill="url(#skodaEmerald)"/>
+    <circle cx="100" cy="100" r="82" fill="none" stroke="url(#skodaElectric)" stroke-width="4"/>
+    <!-- Winged Arrow & Eye -->
+    <!-- Wing Feathers -->
+    <path d="M 64 68 C 82 56 112 56 142 66 L 126 84 C 106 78 86 78 72 84 Z" fill="url(#skodaElectric)"/>
+    <path d="M 52 92 C 72 84 104 84 136 94 L 122 110 C 98 104 76 104 60 110 Z" fill="url(#skodaElectric)"/>
+    <!-- Arrow Head -->
+    <path d="M 80 134 L 148 100 L 128 144 L 112 132 L 96 150 Z" fill="url(#skodaElectric)"/>
+    <!-- Bird Eye -->
+    <circle cx="122" cy="74" r="5" fill="url(#skodaEmerald)"/>
+  </g>
+</svg>

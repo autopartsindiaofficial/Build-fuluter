@@ -1,0 +1,19 @@
+<svg viewBox="0 0 200 200" width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="mgRed" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#BE123C" />
+      <stop offset="100%" stop-color="#881337" />
+    </linearGradient>
+  </defs>
+  <!-- Official MG Octagon Emblem -->
+  <g transform="translate(20, 20) scale(0.8)">
+    <!-- Octagon Border -->
+    <polygon points="58,16 142,16 184,58 184,142 142,184 58,184 16,142 16,58" fill="url(#mgRed)" stroke="#FFFFFF" stroke-width="6"/>
+    <polygon points="62,24 138,24 176,62 176,138 138,176 62,176 24,138 24,62" fill="none" stroke="#FFFFFF" stroke-width="3"/>
+    <!-- MG Typography Monogram -->
+    <!-- M -->
+    <path d="M 44 140 L 44 60 L 68 112 L 92 60 L 92 140 L 76 140 L 76 96 L 68 116 L 60 96 L 60 140 Z" fill="#FFFFFF"/>
+    <!-- G -->
+    <path d="M 156 82 L 140 82 C 136 72 126 66 114 66 C 98 66 88 80 88 100 C 88 120 98 134 114 134 C 126 134 136 128 140 118 L 116 118 L 116 102 L 156 102 L 156 140 L 142 140 C 134 146 124 150 112 150 C 86 150 70 128 70 100 C 70 72 86 50 112 50 C 130 50 146 62 156 82 Z" fill="#FFFFFF"/>
+  </g>
+</svg>
