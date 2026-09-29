@@ -123,7 +123,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   }
 
   Future<void> _checkAppUpdate() async {
-    // 3.5s Fallback timer in case network / Firestore check hangs
     _fallbackTimer = Timer(const Duration(milliseconds: 3500), () {
       _safeProceed();
     });
@@ -160,8 +159,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     showDialog(
       context: context,
       barrierDismissible: !forceUpdate,
-      builder: (ctx) => WillPopScope(
-        onWillPop: () async => !forceUpdate,
+      builder: (ctx) => PopScope(
+        canPop: !forceUpdate,
         child: AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(
@@ -213,7 +212,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0075FF), // Vibrant Electric Royal Blue matching React Native & Reference Design
+      backgroundColor: const Color(0xFF0075FF),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
@@ -229,7 +228,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Car Part Logo Icon Card
                       Container(
                         width: 90,
                         height: 90,
@@ -250,7 +248,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                       ),
                       const SizedBox(height: 20),
 
-                      // App Name
                       const Text(
                         'Auto Parts India',
                         style: TextStyle(
@@ -262,7 +259,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                       ),
                       const SizedBox(height: 6),
 
-                      // Sub-badge
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
@@ -286,7 +282,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
               const Spacer(),
 
-              // Footer Tagline matching exact React Native specification
               FadeTransition(
                 opacity: _footerFade,
                 child: const Text(

@@ -12,6 +12,7 @@ class AppAuthProvider extends ChangeNotifier {
 
   User? get user => _user;
   UserProfile? get userProfile => _userProfile;
+  UserProfile? get profile => _userProfile; // alias for compatibility
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _user != null;
 
@@ -48,7 +49,7 @@ class AppAuthProvider extends ChangeNotifier {
         _userProfile = UserProfile.fromFirestore(doc);
       }
     } catch (e) {
-      print('Error fetching profile: $e');
+      debugPrint('Error fetching profile: $e');
     }
   }
 
