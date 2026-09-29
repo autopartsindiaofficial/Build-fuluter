@@ -34,7 +34,16 @@ class AppAuthProvider extends ChangeNotifier {
 
   Future<void> _fetchUserProfile(String uid) async {
     try {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      FirebaseFirestore firestore;
+      try {
+        firestore = FirebaseFirestore.instanceFor(
+          app: FirebaseFirestore.instance.app,
+          databaseId: 'ai-studio-autopartsmarketp-6b6de595-2abc-431d-a6dc-0141a5eff96f',
+        );
+      } catch (_) {
+        firestore = FirebaseFirestore.instance;
+      }
+      final doc = await firestore.collection('users').doc(uid).get();
       if (doc.exists) {
         _userProfile = UserProfile.fromFirestore(doc);
       }

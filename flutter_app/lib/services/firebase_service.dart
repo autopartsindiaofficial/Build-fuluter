@@ -3,7 +3,18 @@ import '../models/spare_part.dart';
 import '../models/chat_message.dart';
 
 class FirebaseService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  static const String customDatabaseId = 'ai-studio-autopartsmarketp-6b6de595-2abc-431d-a6dc-0141a5eff96f';
+
+  FirebaseFirestore get _db {
+    try {
+      return FirebaseFirestore.instanceFor(
+        app: FirebaseFirestore.instance.app,
+        databaseId: customDatabaseId,
+      );
+    } catch (_) {
+      return FirebaseFirestore.instance;
+    }
+  }
 
   // Stream of recent spare parts
   Stream<List<SparePart>> getSparePartsStream({String? category, String? brand}) {

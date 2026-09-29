@@ -8,6 +8,7 @@ import 'providers/auth_provider.dart';
 import 'providers/parts_provider.dart';
 import 'providers/language_provider.dart';
 import 'screens/main_nav_screen.dart';
+import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -52,7 +53,7 @@ class AutoPartsIndiaApp extends StatelessWidget {
             scrolledUnderElevation: 1,
           ),
         ),
-        home: const MainNavScreen(),
+        home: const SplashScreen(),
       ),
     );
   }

@@ -5,8 +5,18 @@ import '../models/user_profile.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
+
+  FirebaseFirestore get _db {
+    try {
+      return FirebaseFirestore.instanceFor(
+        app: FirebaseFirestore.instance.app,
+        databaseId: 'ai-studio-autopartsmarketp-6b6de595-2abc-431d-a6dc-0141a5eff96f',
+      );
+    } catch (_) {
+      return FirebaseFirestore.instance;
+    }
+  }
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
   User? get currentUser => _auth.currentUser;

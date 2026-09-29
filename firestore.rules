@@ -53,9 +53,17 @@ service cloud.firestore {
       allow update, delete: if true;
     }
     
-    // 3. Chats
+    // 3. Chats and Conversations
     match /chats/{chatId} {
       allow read, write: if isSignedIn() || isAdmin();
+    }
+    
+    match /conversations/{convoId} {
+      allow read, write: if true;
+    }
+    
+    match /conversations/{convoId}/messages/{messageId} {
+      allow read, write: if true;
     }
     
     // 4. Chat Messages
