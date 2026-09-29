@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-flutter-apk:
@@ -198,15 +198,39 @@ jobs:
           ls -lah build/app/outputs/bundle/release/
 
       - name: Upload Flutter APKs to GitHub Artifacts
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: flutter-android-apks
           path: flutter_app/build/app/outputs/flutter-apk/*.apk
-          retention-days: 14
+          retention-days: 1
 
       - name: Upload Google Play AAB to GitHub Artifacts
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: flutter-android-bundle-aab
           path: flutter_app/build/app/outputs/bundle/release/*.aab
-          retention-days: 14
+          retention-days: 1
+
+      - name: Publish Release APK & AAB to GitHub Releases
+        continue-on-error: true
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v1.0.0"
+          name: "Auto Parts Marketplace v1.0.0 (Release APK & AAB)"
+          body: |
+            ## 🚀 Auto Parts Marketplace Release v1.0.0
+            
+            Android release binaries:
+            - **app-release.apk**: Universal Android APK (Install directly on any Android device)
+            - **app-release.aab**: Google Play Store Bundle
+            
+            *Compiled with Android SDK 36, Kotlin 2.2.20, Gradle 8.14, AGP 8.11.1*
+          draft: false
+          prerelease: false
+          files: |
+            flutter_app/build/app/outputs/flutter-apk/*.apk
+            flutter_app/build/app/outputs/bundle/release/*.aab
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
