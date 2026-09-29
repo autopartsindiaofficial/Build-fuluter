@@ -167,22 +167,35 @@ jobs:
           GRADLE_OPTS: "-Dandroid.newDsl=false -Dandroid.builtInKotlin=false -Dandroid.skipBuildDependencyValidation=true -Dandroid.suppressUnsupportedCompileSdk=36"
         run: |
           cd flutter_app
-          flutter build apk --release --no-tree-shake-icons --android-skip-build-dependency-validation
-
-      - name: Build Android Per-ABI Split APKs (Faster & Smaller)
-        continue-on-error: true
-        env:
-          GRADLE_OPTS: "-Dandroid.newDsl=false -Dandroid.builtInKotlin=false -Dandroid.skipBuildDependencyValidation=true -Dandroid.suppressUnsupportedCompileSdk=36"
-        run: |
-          cd flutter_app
-          flutter build apk --split-per-abi --release --no-tree-shake-icons --android-skip-build-dependency-validation
+          chmod +x android/gradlew || true
+          flutter build apk --release --no-tree-shake-icons --android-skip-build-dependency-validation || {
+            echo "Flutter CLI failed to find APK, checking or assembling via Gradle directly..."
+            cd android
+            ./gradlew assembleRelease --no-daemon -Dandroid.skipBuildDependencyValidation=true -Dandroid.suppressUnsupportedCompileSdk=36
+            cd ..
+          }
+          mkdir -p build/app/outputs/flutter-apk
+          find . -name "*release*.apk" -exec cp {} build/app/outputs/flutter-apk/ \; || true
+          find . -name "*.apk" -exec cp {} build/app/outputs/flutter-apk/ \; || true
+          echo "=== Built APK Files ==="
+          ls -lah build/app/outputs/flutter-apk/
 
       - name: Build Google Play App Bundle (AAB)
         env:
           GRADLE_OPTS: "-Dandroid.newDsl=false -Dandroid.builtInKotlin=false -Dandroid.skipBuildDependencyValidation=true -Dandroid.suppressUnsupportedCompileSdk=36"
         run: |
           cd flutter_app
-          flutter build appbundle --release --no-tree-shake-icons --android-skip-build-dependency-validation
+          flutter build appbundle --release --no-tree-shake-icons --android-skip-build-dependency-validation || {
+            echo "Building bundle via Gradle bundleRelease directly..."
+            cd android
+            ./gradlew bundleRelease --no-daemon -Dandroid.skipBuildDependencyValidation=true -Dandroid.suppressUnsupportedCompileSdk=36
+            cd ..
+          }
+          mkdir -p build/app/outputs/bundle/release
+          find . -name "*release*.aab" -exec cp {} build/app/outputs/bundle/release/ \; || true
+          find . -name "*.aab" -exec cp {} build/app/outputs/bundle/release/ \; || true
+          echo "=== Built AAB Files ==="
+          ls -lah build/app/outputs/bundle/release/
 
       - name: Upload Flutter APKs to GitHub Artifacts
         uses: actions/upload-artifact@v4
