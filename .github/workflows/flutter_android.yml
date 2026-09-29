@@ -22,6 +22,20 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
+      - name: Free Disk Space on GitHub Runner
+        run: |
+          echo "=== Initial Disk Space ==="
+          df -h
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /usr/local/lib/android/sdk/ndk* || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /usr/local/share/boost || true
+          sudo rm -rf /usr/local/share/powershell || true
+          sudo rm -rf /usr/share/swift || true
+          sudo docker image prune --all --force 2>/dev/null || true
+          echo "=== Disk Space After Cleanup ==="
+          df -h
+
       - name: Setup Java JDK 17
         uses: actions/setup-java@v4
         with:
@@ -39,16 +53,6 @@ jobs:
         run: |
           flutter --version
           dart --version
-
-      - name: Create Swap Space to Prevent Out Of Memory
-        run: |
-          sudo swapoff -a || true
-          sudo rm -f /mnt/swapfile || true
-          sudo fallocate -l 4G /mnt/swapfile || sudo dd if=/dev/zero of=/mnt/swapfile bs=1M count=4096
-          sudo chmod 600 /mnt/swapfile
-          sudo mkswap /mnt/swapfile
-          sudo swapon /mnt/swapfile
-          free -h
 
       - name: Ensure Android Keystore
         run: |
@@ -162,7 +166,7 @@ jobs:
           GRADLE_OPTS: "-Dandroid.newDsl=false -Dandroid.builtInKotlin=false -Dandroid.skipBuildDependencyValidation=true"
         run: |
           cd flutter_app
-          flutter build apk --release --no-tree-shake-icons --android-skip-build-dependency-validation -v
+          flutter build apk --release --no-tree-shake-icons --android-skip-build-dependency-validation
 
       - name: Build Android Per-ABI Split APKs (Faster & Smaller)
         continue-on-error: true
