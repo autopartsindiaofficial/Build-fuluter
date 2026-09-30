@@ -6,19 +6,38 @@ class CloudinaryService {
   static const String cloudName = 'rqf1hlrx';
   static const String uploadPreset = 'autoparts_unsigned';
 
-  // Upload an image file directly to Cloudinary and return the secure HTTPS URL
-  static Future<String?> uploadImage(File imageFile) async {
+  // Instance method accepting either a File or String file path
+  Future<String?> uploadImage(dynamic imageInput) async {
+    return upload(imageInput);
+  }
+
+  // Static upload method accepting File, String path, or dynamic input
+  static Future<String?> upload(dynamic imageInput) async {
     try {
+      String filePath;
+      if (imageInput is File) {
+        filePath = imageInput.path;
+      } else if (imageInput is String) {
+        filePath = imageInput;
+      } else {
+        return null;
+      }
+
+      final file = File(filePath);
+      if (!await file.exists()) {
+        return null;
+      }
+
       final uri = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
       final request = http.MultipartRequest('POST', uri)
         ..fields['upload_preset'] = uploadPreset
-        ..files.add(await http.MultipartFile.fromPath('file', imageFile.path));
+        ..files.add(await http.MultipartFile.fromPath('file', filePath));
 
       final response = await request.send();
       if (response.statusCode == 200) {
         final responseData = await response.stream.toBytes();
-        final responseString = String.fromCharCodes(responseData);
-        final jsonMap = jsonDecode(responseString);
+        final responseString = utf8.decode(responseData);
+        final jsonMap = jsonDecode(responseString) as Map<String, dynamic>;
         return jsonMap['secure_url'] as String?;
       } else {
         print('Cloudinary upload error with status: ${response.statusCode}');

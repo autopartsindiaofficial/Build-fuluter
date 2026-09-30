@@ -53,6 +53,7 @@ jobs:
         run: |
           flutter --version
           dart --version
+          flutter precache --android
 
       - name: Ensure Android Keystore
         run: |
@@ -131,7 +132,7 @@ jobs:
           cat << 'EOF' > flutter_app/android/gradle/wrapper/gradle-wrapper.properties
           distributionBase=GRADLE_USER_HOME
           distributionPath=wrapper/dists
-          distributionUrl=https\://services.gradle.org/distributions/gradle-8.14.4-bin.zip
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.11.1-bin.zip
           zipStoreBase=GRADLE_USER_HOME
           zipStorePath=wrapper/dists
           EOF
@@ -150,33 +151,27 @@ jobs:
           EOF
           mkdir -p ~/.gradle
           cp flutter_app/android/gradle.properties ~/.gradle/gradle.properties || true
+          
+          # Setup local.properties with correct flutter.sdk
+          FLUTTER_SDK_DIR=$(which flutter | sed 's|/bin/flutter||')
+          echo "flutter.sdk=$FLUTTER_SDK_DIR" > flutter_app/android/local.properties
+          echo "sdk.dir=$ANDROID_HOME" >> flutter_app/android/local.properties
 
       - name: Install Flutter Dependencies
         run: |
           cd flutter_app
-          flutter clean || true
+          flutter clean
           flutter pub get
-
-      - name: Analyze Dart Code
-        run: |
-          cd flutter_app
-          flutter analyze --no-fatal-infos || true
 
       - name: Build Android Universal Release APK
         env:
           GRADLE_OPTS: "-Dandroid.newDsl=false -Dandroid.builtInKotlin=false -Dandroid.skipBuildDependencyValidation=true -Dandroid.suppressUnsupportedCompileSdk=36"
         run: |
           cd flutter_app
-          chmod +x android/gradlew || true
-          flutter build apk --release --no-tree-shake-icons --android-skip-build-dependency-validation || {
-            echo "Flutter CLI failed to find APK, checking or assembling via Gradle directly..."
-            cd android
-            ./gradlew assembleRelease --no-daemon -Dandroid.skipBuildDependencyValidation=true -Dandroid.suppressUnsupportedCompileSdk=36
-            cd ..
-          }
+          flutter build apk --release --verbose --no-tree-shake-icons --android-skip-build-dependency-validation
           mkdir -p build/app/outputs/flutter-apk
-          find . -name "*release*.apk" -exec cp {} build/app/outputs/flutter-apk/ \; || true
-          find . -name "*.apk" -exec cp {} build/app/outputs/flutter-apk/ \; || true
+          find build -name "*release*.apk" -exec cp {} build/app/outputs/flutter-apk/ \; || true
+          find build -name "*.apk" -exec cp {} build/app/outputs/flutter-apk/ \; || true
           echo "=== Built APK Files ==="
           ls -lah build/app/outputs/flutter-apk/
 
@@ -185,15 +180,10 @@ jobs:
           GRADLE_OPTS: "-Dandroid.newDsl=false -Dandroid.builtInKotlin=false -Dandroid.skipBuildDependencyValidation=true -Dandroid.suppressUnsupportedCompileSdk=36"
         run: |
           cd flutter_app
-          flutter build appbundle --release --no-tree-shake-icons --android-skip-build-dependency-validation || {
-            echo "Building bundle via Gradle bundleRelease directly..."
-            cd android
-            ./gradlew bundleRelease --no-daemon -Dandroid.skipBuildDependencyValidation=true -Dandroid.suppressUnsupportedCompileSdk=36
-            cd ..
-          }
+          flutter build appbundle --release --verbose --no-tree-shake-icons --android-skip-build-dependency-validation || true
           mkdir -p build/app/outputs/bundle/release
-          find . -name "*release*.aab" -exec cp {} build/app/outputs/bundle/release/ \; || true
-          find . -name "*.aab" -exec cp {} build/app/outputs/bundle/release/ \; || true
+          find build -name "*release*.aab" -exec cp {} build/app/outputs/bundle/release/ \; || true
+          find build -name "*.aab" -exec cp {} build/app/outputs/bundle/release/ \; || true
           echo "=== Built AAB Files ==="
           ls -lah build/app/outputs/bundle/release/
 
@@ -226,7 +216,7 @@ jobs:
             - **app-release.apk**: Universal Android APK (Install directly on any Android device)
             - **app-release.aab**: Google Play Store Bundle
             
-            *Compiled with Android SDK 36, Kotlin 2.2.20, Gradle 8.14, AGP 8.11.1*
+            *Compiled with Android SDK 35, Kotlin 2.2.20, Gradle 8.11.1, AGP 8.11.1*
           draft: false
           prerelease: false
           files: |
