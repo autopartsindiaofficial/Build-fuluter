@@ -9,6 +9,7 @@ class SparePart {
   final String subcategory;
   final String condition;
   final double price;
+  final bool isNegotiable;
   final String location;
   final String district;
   final String? contactName;
@@ -44,6 +45,7 @@ class SparePart {
     this.subcategory = '',
     required this.condition,
     required this.price,
+    required this.isNegotiable,
     required this.location,
     this.district = '',
     this.contactName,
@@ -66,9 +68,71 @@ class SparePart {
     this.isDeleted = false,
   });
 
-  factory SparePart.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>? ?? {};
-    
+  SparePart copyWith({
+    String? id,
+    String? title,
+    String? carBrand,
+    String? carModel,
+    String? category,
+    String? subcategory,
+    String? condition,
+    double? price,
+    bool? isNegotiable,
+    String? location,
+    String? district,
+    String? contactName,
+    String? contactPhone,
+    String? description,
+    String? imageUrl,
+    List<String>? imageUrls,
+    String? sellerId,
+    String? sellerEmail,
+    DateTime? createdAt,
+    bool? isSold,
+    bool? verified,
+    int? views,
+    String? oemNumber,
+    String? compatibleYears,
+    String? status,
+    bool? approved,
+    bool? featured,
+    bool? reported,
+    bool? isDeleted,
+  }) {
+    return SparePart(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      carBrand: carBrand ?? this.carBrand,
+      carModel: carModel ?? this.carModel,
+      category: category ?? this.category,
+      subcategory: subcategory ?? this.subcategory,
+      condition: condition ?? this.condition,
+      price: price ?? this.price,
+      isNegotiable: isNegotiable ?? this.isNegotiable,
+      location: location ?? this.location,
+      district: district ?? this.district,
+      contactName: contactName ?? this.contactName,
+      contactPhone: contactPhone ?? this.contactPhone,
+      description: description ?? this.description,
+      imageUrl: imageUrl ?? this.imageUrl,
+      imageUrls: imageUrls ?? this.imageUrls,
+      sellerId: sellerId ?? this.sellerId,
+      sellerEmail: sellerEmail ?? this.sellerEmail,
+      createdAt: createdAt ?? this.createdAt,
+      isSold: isSold ?? this.isSold,
+      verified: verified ?? this.verified,
+      views: views ?? this.views,
+      oemNumber: oemNumber ?? this.oemNumber,
+      compatibleYears: compatibleYears ?? this.compatibleYears,
+      status: status ?? this.status,
+      approved: approved ?? this.approved,
+      featured: featured ?? this.featured,
+      reported: reported ?? this.reported,
+      isDeleted: isDeleted ?? this.isDeleted,
+    );
+  }
+
+  factory SparePart.fromJson(Map<String, dynamic> data, {String id = ''}) {
     DateTime created;
     if (data['createdAt'] is Timestamp) {
       created = (data['createdAt'] as Timestamp).toDate();
@@ -91,8 +155,14 @@ class SparePart {
         ? data['imageUrl'].toString()
         : (images.isNotEmpty ? images.first : '');
 
+    final bool isNegotiable = (data['isNegotiable'] is bool)
+        ? data['isNegotiable'] as bool
+        : (data['negotiable'] is bool
+            ? data['negotiable'] as bool
+            : (data['isNegotiable'] == true || data['negotiable'] == true));
+
     return SparePart(
-      id: doc.id,
+      id: id.isNotEmpty ? id : (data['id']?.toString() ?? ''),
       title: data['title'] ?? '',
       carBrand: data['carBrand'] ?? data['brand'] ?? '',
       carModel: data['carModel'] ?? data['model'] ?? '',
@@ -100,6 +170,7 @@ class SparePart {
       subcategory: data['subcategory'] ?? '',
       condition: data['condition'] ?? 'Used - Good',
       price: (data['price'] is num) ? (data['price'] as num).toDouble() : 0.0,
+      isNegotiable: isNegotiable,
       location: data['location'] ?? 'India',
       district: data['district'] ?? '',
       contactName: data['contactName'] ?? data['sellerName'] ?? data['name'],
@@ -123,6 +194,11 @@ class SparePart {
     );
   }
 
+  factory SparePart.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>? ?? {};
+    return SparePart.fromJson(data, id: doc.id);
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'title': title,
@@ -132,6 +208,7 @@ class SparePart {
       'subcategory': subcategory,
       'condition': condition,
       'price': price,
+      'isNegotiable': isNegotiable,
       'location': location,
       'district': district,
       'contactName': contactName,
@@ -154,4 +231,6 @@ class SparePart {
       'isDeleted': isDeleted,
     };
   }
+
+  Map<String, dynamic> toJson() => toMap();
 }

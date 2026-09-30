@@ -31,6 +31,7 @@ class _EditListingScreenState extends State<EditListingScreen> {
   late TextEditingController _phoneController;
 
   late String _selectedCondition;
+  late bool _isNegotiable;
   late List<String> _currentImages;
   final List<File> _newImages = [];
   bool _isLoading = false;
@@ -69,6 +70,7 @@ class _EditListingScreenState extends State<EditListingScreen> {
     _phoneController = TextEditingController(text: p.contactPhone ?? '');
 
     _selectedCondition = _conditions.contains(p.condition) ? p.condition : 'Used - Like New';
+    _isNegotiable = p.isNegotiable;
     _currentImages = List<String>.from(p.imageUrls.isNotEmpty ? p.imageUrls : [p.imageUrl]);
   }
 
@@ -158,6 +160,7 @@ class _EditListingScreenState extends State<EditListingScreen> {
       final updatedData = {
         'title': _titleController.text.trim(),
         'price': double.tryParse(_priceController.text.trim()) ?? widget.part.price,
+        'isNegotiable': _isNegotiable,
         'carBrand': _brandController.text.trim(),
         'carModel': _modelController.text.trim(),
         'category': _categoryController.text.trim(),
@@ -311,12 +314,37 @@ class _EditListingScreenState extends State<EditListingScreen> {
               ),
               const SizedBox(height: 12),
 
-              // Price
-              TextFormField(
-                controller: _priceController,
-                keyboardType: TextInputType.number,
-                decoration: _inputDecoration('Price (₹) *', Icons.currency_rupee),
-                validator: (val) => val == null || val.trim().isEmpty ? 'Enter price' : null,
+              // Price & Negotiable Row
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _priceController,
+                      keyboardType: TextInputType.number,
+                      decoration: _inputDecoration('Price (₹) *', Icons.currency_rupee),
+                      validator: (val) => val == null || val.trim().isEmpty ? 'Enter price' : null,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Text('Negotiable', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                        Switch(
+                          value: _isNegotiable,
+                          activeColor: const Color(0xFF0075FF),
+                          onChanged: (val) => setState(() => _isNegotiable = val),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
 
