@@ -13,27 +13,6 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
-subprojects { subproject ->
-    subproject.plugins.withId("com.android.library") {
-        if (subproject.hasProperty("android")) {
-            if (subproject.android.hasProperty("compileSdk")) {
-                subproject.android.compileSdk = 36
-            } else if (subproject.android.hasProperty("compileSdkVersion")) {
-                subproject.android.compileSdkVersion = 36
-            }
-        }
-    }
-    subproject.plugins.withId("com.android.application") {
-        if (subproject.hasProperty("android")) {
-            if (subproject.android.hasProperty("compileSdk")) {
-                subproject.android.compileSdk = 36
-            } else if (subproject.android.hasProperty("compileSdkVersion")) {
-                subproject.android.compileSdkVersion = 36
-            }
-        }
-    }
-}
-
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
