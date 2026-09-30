@@ -11,14 +11,16 @@ class MasterCategory {
   const MasterCategory({
     required this.id,
     required this.name,
-    required this.iconName,
-    required this.bgColor,
-    required this.primaryColor,
-    required this.description,
-    required this.popularParts,
+    this.iconName = 'category',
+    this.bgColor = 0xFFEFF6FF,
+    this.primaryColor = 0xFF0075FF,
+    this.description = '',
+    this.popularParts = const [],
     this.imageUrl,
   });
 }
+
+typedef CategoryData = MasterCategory;
 
 const List<MasterCategory> MASTER_CATEGORIES = [
   MasterCategory(

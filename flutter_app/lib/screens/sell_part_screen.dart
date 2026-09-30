@@ -763,8 +763,9 @@ class _SellPartScreenState extends State<SellPartScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildSectionHeader(String title, String subtitle) {
     return Column(

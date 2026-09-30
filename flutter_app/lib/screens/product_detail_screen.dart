@@ -14,6 +14,7 @@ import '../widgets/make_offer_dialog.dart';
 import 'chat_room_screen.dart';
 import 'seller_profile_screen.dart';
 import 'edit_listing_screen.dart';
+import 'full_screen_gallery_screen.dart';
 import '../services/cloudinary_service.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -143,38 +144,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
   }
 
-  void _openFullScreenImage(String imageUrl) {
-    showDialog(
-      context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.black,
-        insetPadding: EdgeInsets.zero,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            InteractiveViewer(
-              panEnabled: true,
-              minScale: 0.5,
-              maxScale: 4.0,
-              child: CachedNetworkImage(
-                imageUrl: imageUrl,
-                fit: BoxFit.contain,
-                placeholder: (_, __) => const Center(
-                  child: CircularProgressIndicator(color: Colors.white),
-                ),
-                errorWidget: (_, __, ___) => const Icon(Icons.broken_image_rounded, color: Colors.white, size: 50),
-              ),
-            ),
-            Positioned(
-              top: 40,
-              right: 20,
-              child: IconButton(
-                icon: const Icon(Icons.close_rounded, color: Colors.white, size: 28),
-                onPressed: () => Navigator.pop(ctx),
-              ),
-            ),
-          ],
+  void _openFullScreenImage(int initialIndex, List<String> images) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        opaque: true,
+        pageBuilder: (context, animation, secondaryAnimation) => FullScreenGalleryScreen(
+          images: images,
+          initialIndex: initialIndex,
+          title: widget.part.title,
         ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
       ),
     );
   }
@@ -288,7 +270,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     itemBuilder: (context, idx) {
                       final url = images[idx];
                       return GestureDetector(
-                        onTap: () => _openFullScreenImage(url),
+                        onTap: () => _openFullScreenImage(idx, images),
                         child: Container(
                           color: const Color(0xFF0F172A),
                           child: CachedNetworkImage(
@@ -315,20 +297,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 Positioned(
                   bottom: 14,
                   right: 14,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.65),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white24, width: 1),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.zoom_in_rounded, color: Colors.white, size: 14),
-                        SizedBox(width: 4),
-                        Text('Tap to zoom', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
-                      ],
+                  child: GestureDetector(
+                    onTap: () => _openFullScreenImage(_activeImageIndex, images),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.65),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white24, width: 1),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Icon(Icons.zoom_in_rounded, color: Colors.white, size: 14),
+                          SizedBox(width: 4),
+                          Text('Tap to zoom', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
+                        ],
+                      ),
                     ),
                   ),
                 ),

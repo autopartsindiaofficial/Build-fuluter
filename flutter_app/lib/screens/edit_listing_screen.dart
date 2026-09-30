@@ -485,8 +485,9 @@ class _EditListingScreenState extends State<EditListingScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   InputDecoration _inputDecoration(String label, IconData icon) {
     return InputDecoration(
