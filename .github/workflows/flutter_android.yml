@@ -42,6 +42,11 @@ jobs:
           java-version: "17"
           cache: "gradle"
 
+      - name: Setup Android SDK Platform 36
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager --install "platforms;android-36" "build-tools;36.0.0" || true
+
       - name: Setup Flutter SDK
         uses: subosito/flutter-action@v2
         with:
@@ -131,7 +136,7 @@ jobs:
           cat << 'EOF' > flutter_app/android/gradle/wrapper/gradle-wrapper.properties
           distributionBase=GRADLE_USER_HOME
           distributionPath=wrapper/dists
-          distributionUrl=https\://services.gradle.org/distributions/gradle-8.10.2-bin.zip
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.11.1-bin.zip
           zipStoreBase=GRADLE_USER_HOME
           zipStorePath=wrapper/dists
           EOF
@@ -160,11 +165,9 @@ jobs:
           flutter pub get
 
       - name: Build Android Universal Release APK
-        env:
-          GRADLE_OPTS: "-Dandroid.newDsl=false -Dandroid.builtInKotlin=false -Dandroid.skipBuildDependencyValidation=true -Dandroid.suppressUnsupportedCompileSdk=36"
         run: |
           cd flutter_app
-          flutter build apk --release --verbose --no-tree-shake-icons --android-skip-build-dependency-validation
+          flutter build apk --release --verbose --no-tree-shake-icons
           mkdir -p build/app/outputs/flutter-apk
           find build -name "*release*.apk" -exec cp {} build/app/outputs/flutter-apk/ \; || true
           find build -name "*.apk" -exec cp {} build/app/outputs/flutter-apk/ \; || true
@@ -172,11 +175,9 @@ jobs:
           ls -lah build/app/outputs/flutter-apk/
 
       - name: Build Google Play App Bundle (AAB)
-        env:
-          GRADLE_OPTS: "-Dandroid.newDsl=false -Dandroid.builtInKotlin=false -Dandroid.skipBuildDependencyValidation=true -Dandroid.suppressUnsupportedCompileSdk=36"
         run: |
           cd flutter_app
-          flutter build appbundle --release --verbose --no-tree-shake-icons --android-skip-build-dependency-validation || true
+          flutter build appbundle --release --verbose --no-tree-shake-icons || true
           mkdir -p build/app/outputs/bundle/release
           find build -name "*release*.aab" -exec cp {} build/app/outputs/bundle/release/ \; || true
           find build -name "*.aab" -exec cp {} build/app/outputs/bundle/release/ \; || true
@@ -212,7 +213,7 @@ jobs:
             - **app-release.apk**: Universal Android APK (Install directly on any Android device)
             - **app-release.aab**: Google Play Store Bundle
             
-            *Compiled with Android SDK 35, Kotlin 2.2.20, Gradle 8.11.1, AGP 8.11.1*
+            *Compiled with Android SDK 36, Android Gradle Plugin 8.9.1, Gradle 8.11.1*
           draft: false
           prerelease: false
           files: |
