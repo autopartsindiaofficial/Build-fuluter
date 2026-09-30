@@ -205,7 +205,7 @@ class _AdminTaxonomyScreenState extends State<AdminTaxonomyScreen> with SingleTi
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.border),
+                        side: const BorderSide(color: AppColors.border),
                       ),
                       margin: const EdgeInsets.only(bottom: 8),
                       child: ListTile(
@@ -247,7 +247,7 @@ class _AdminTaxonomyScreenState extends State<AdminTaxonomyScreen> with SingleTi
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.border),
+                        side: const BorderSide(color: AppColors.border),
                       ),
                       margin: const EdgeInsets.only(bottom: 10),
                       child: ListTile(

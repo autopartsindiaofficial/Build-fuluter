@@ -361,7 +361,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 10),
-                        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
+                        constraints: BoxConstraints(
+                          maxWidth: MediaQuery.of(context).size.width * 0.78,
+                        ),
                         decoration: BoxDecoration(
                           color: isMe ? const Color(0xFF0075FF) : Colors.white,
                           borderRadius: BorderRadius.only(
@@ -469,25 +471,26 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                             ],
                           ),
                         ),
-                      );
-                    },
-                  );
-                },
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+
+          if (_isUploadingImage)
+            Container(
+              padding: const EdgeInsets.all(8),
+              color: Colors.white,
+              child: Row(
+                children: const [
+                  SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                  SizedBox(width: 8),
+                  Text('Uploading part photo...', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                ],
               ),
             ),
-
-            if (_isUploadingImage)
-              Container(
-                padding: const EdgeInsets.all(8),
-                color: Colors.white,
-                child: Row(
-                  children: const [
-                    SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
-                    SizedBox(width: 8),
-                    Text('Uploading part photo...', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                  ],
-                ),
-              ),
 
           // 3. Quick Replies Carousel
           Container(

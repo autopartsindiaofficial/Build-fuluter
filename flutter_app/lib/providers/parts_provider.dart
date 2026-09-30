@@ -8,10 +8,14 @@ class PartsProvider extends ChangeNotifier {
   String _selectedCategory = 'All';
   String _selectedBrand = 'All';
   List<String> _wishlistPartIds = [];
+  bool _isLoading = false;
 
   String get selectedCategory => _selectedCategory;
   String get selectedBrand => _selectedBrand;
   List<String> get wishlistPartIds => _wishlistPartIds;
+  List<String> get favorites => _wishlistPartIds;
+  int get favoritesCount => _wishlistPartIds.length;
+  bool get isLoading => _isLoading;
 
   void selectCategory(String category) {
     _selectedCategory = category;
@@ -33,6 +37,14 @@ class PartsProvider extends ChangeNotifier {
   }
 
   bool isFavorite(String partId) => _wishlistPartIds.contains(partId);
+
+  Future<void> fetchParts() async {
+    _isLoading = true;
+    notifyListeners();
+    await Future.delayed(const Duration(milliseconds: 300));
+    _isLoading = false;
+    notifyListeners();
+  }
 
   Stream<List<SparePart>> get partsStream {
     return _firebaseService.getSparePartsStream(

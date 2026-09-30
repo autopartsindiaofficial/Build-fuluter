@@ -396,7 +396,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
   // ==========================================
   Widget _buildListingsTab() {
     return StreamBuilder<QuerySnapshot>(
-      stream: _db.collection('spareParts').orderBy('createdAt', 'desc').snapshots(),
+      stream: _db.collection('spareParts').orderBy('createdAt', descending: true).snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());

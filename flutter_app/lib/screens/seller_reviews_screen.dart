@@ -200,7 +200,7 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.border),
+                        side: const BorderSide(color: AppColors.border),
                       ),
                       margin: const EdgeInsets.only(bottom: 12),
                       child: Padding(
