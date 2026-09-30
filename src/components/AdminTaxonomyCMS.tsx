@@ -1129,15 +1129,9 @@ export default function AdminTaxonomyCMS({
             />
 
             <div className="flex items-center gap-2">
-              <input
-                type="text"
-                placeholder="Image URL or upload image below"
-                value={catImage}
-                onChange={(e) => setCatImage(e.target.value)}
-                className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium focus:outline-none focus:border-[#0056D2]"
-              />
-              <label className="bg-slate-200 hover:bg-slate-300 text-slate-700 p-2 rounded-lg cursor-pointer transition-colors shrink-0">
-                <UploadCloud size={16} className="text-[#0056D2]" />
+              <label className="flex-1 flex items-center justify-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-[#0056D2] border border-blue-200 py-1.5 px-3 rounded-lg cursor-pointer transition-colors text-xs font-bold">
+                <UploadCloud size={14} />
+                <span>{catImage ? "Photo Selected / Uploaded" : "Upload Category Photo"}</span>
                 <input
                   type="file"
                   accept="image/*"

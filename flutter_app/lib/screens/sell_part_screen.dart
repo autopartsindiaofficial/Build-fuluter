@@ -43,7 +43,7 @@ class _SellPartScreenState extends State<SellPartScreen> {
     }
   }
 
-  // Brand to Model Cascading Map
+  // Brand to Model Cascading Map (Live synced + default fallback)
   final Map<String, List<String>> _brandModels = {
     'Maruti Suzuki': ['Swift', 'Baleno', 'Brezza', 'Dzire', 'Ertiga', 'Wagon R', 'Alto', 'Grand Vitara', 'Ciaz', 'Fronx', 'Jimny', 'XL6', 'Ignis', 'Celerio', 'Ritz'],
     'Hyundai': ['Creta', 'i20', 'Venue', 'Verna', 'Grand i10', 'Aura', 'Tucson', 'Exter', 'Alcazar', 'Santro', 'Eon'],
@@ -57,7 +57,7 @@ class _SellPartScreenState extends State<SellPartScreen> {
     'Ford': ['EcoSport', 'Endeavour', 'Figo', 'Aspire', 'Freestyle'],
   };
 
-  // Categories & Sub-parts
+  // Categories & Sub-parts (Live synced + default fallback)
   final Map<String, List<String>> _categories = {
     'Engine & Mechanical': ['Turbocharger', 'Cylinder Head', 'Pistons & Rings', 'Timing Belt & Chain', 'Engine Oil Pump', 'Fuel Injector', 'Alternator', 'Starter Motor'],
     'Body & Exterior': ['Front Bumper', 'Rear Bumper', 'Headlight Assembly', 'Tail Light Assembly', 'Side Mirrors (ORVM)', 'Bonnet / Hood', 'Front Fender', 'Car Doors'],
@@ -87,7 +87,6 @@ class _SellPartScreenState extends State<SellPartScreen> {
   ];
 
   final List<File> _selectedFiles = [];
-  final List<String> _imageUrls = [];
 
   @override
   void initState() {
@@ -97,6 +96,57 @@ class _SellPartScreenState extends State<SellPartScreen> {
     _selectedCategory = _categories.keys.first;
     _selectedSubcategory = _categories[_selectedCategory]!.first;
     _autoGenerateTitle();
+    _loadDynamicTaxonomy();
+  }
+
+  Future<void> _loadDynamicTaxonomy() async {
+    try {
+      // Sync dynamic topCategories from admin
+      final catSnap = await _db.collection('topCategories').where('active', isEqualTo: true).get();
+      if (catSnap.docs.isNotEmpty) {
+        for (var doc in catSnap.docs) {
+          final data = doc.data();
+          final name = (data['name'] as String? ?? '').trim();
+          if (name.isNotEmpty) {
+            List<String> subList = [];
+            if (data['subcategories'] is String && (data['subcategories'] as String).isNotEmpty) {
+              subList = (data['subcategories'] as String).split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+            } else if (data['subcategories'] is List) {
+              subList = List<String>.from(data['subcategories']);
+            }
+            if (subList.isEmpty) {
+              subList = ['$name Assembly', 'OEM $name', 'Replacement $name Parts'];
+            }
+            _categories[name] = subList;
+          }
+        }
+      }
+
+      // Sync dynamic carBrands from admin
+      final brandSnap = await _db.collection('carBrands').where('active', isEqualTo: true).get();
+      if (brandSnap.docs.isNotEmpty) {
+        for (var doc in brandSnap.docs) {
+          final data = doc.data();
+          final name = (data['name'] as String? ?? '').trim();
+          if (name.isNotEmpty) {
+            List<String> modelList = [];
+            if (data['models'] is String && (data['models'] as String).isNotEmpty) {
+              modelList = (data['models'] as String).split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+            } else if (data['models'] is List) {
+              modelList = List<String>.from(data['models']);
+            }
+            if (modelList.isEmpty) {
+              modelList = ['All Models', 'Standard Spec', 'Base Spec', 'Top Spec'];
+            }
+            _brandModels[name] = modelList;
+          }
+        }
+      }
+
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (_) {}
   }
 
   @override
@@ -107,7 +157,6 @@ class _SellPartScreenState extends State<SellPartScreen> {
     _descCtrl.dispose();
     _locationCtrl.dispose();
     _phoneCtrl.dispose();
-    _directUrlCtrl.dispose();
     super.dispose();
   }
 
@@ -122,19 +171,20 @@ class _SellPartScreenState extends State<SellPartScreen> {
         setState(() {
           _selectedFiles.add(File(picked.path));
         });
+        if (mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('📸 Photo added to listing!'),
+              backgroundColor: Color(0xFF10B981),
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
       }
     } catch (e) {
       debugPrint('Error picking image: $e');
-    }
-  }
-
-  void _addDirectUrl() {
-    final url = _directUrlCtrl.text.trim();
-    if (url.isNotEmpty && url.startsWith('http')) {
-      setState(() {
-        _imageUrls.add(url);
-        _directUrlCtrl.clear();
-      });
     }
   }
 
@@ -208,10 +258,10 @@ class _SellPartScreenState extends State<SellPartScreen> {
 
     if (!_formKey.currentState!.validate()) return;
 
-    if (_selectedFiles.isEmpty && _imageUrls.isEmpty) {
+    if (_selectedFiles.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please upload or attach at least 1 photo of the spare part.'),
+          content: Text('Please upload at least 1 photo of the spare part.'),
           backgroundColor: Color(0xFFEF4444),
         ),
       );
@@ -221,7 +271,7 @@ class _SellPartScreenState extends State<SellPartScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      List<String> finalImages = List.from(_imageUrls);
+      List<String> finalImages = [];
 
       // Upload local images via Cloudinary
       for (var f in _selectedFiles) {
@@ -271,16 +321,69 @@ class _SellPartScreenState extends State<SellPartScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('🎉 Your auto spare part is now LIVE on the marketplace!'),
+            content: Text('🎉 Ad posted successfully! Your part is now live on the marketplace.'),
             backgroundColor: Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
           ),
         );
-        Navigator.pop(context);
+
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            contentPadding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 48),
+                ),
+                const SizedBox(height: 18),
+                const Text(
+                  'Ad Posted Successfully! 🎉',
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: Color(0xFF0F172A)),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Your spare part "${_titleCtrl.text.trim()}" is now LIVE on Auto Parts India marketplace for buyers across India.',
+                  style: const TextStyle(color: Color(0xFF64748B), fontSize: 13, height: 1.4),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 22),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0075FF),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      Navigator.pop(context);
+                    },
+                    child: const Text('Done / View Marketplace', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error posting ad: $e'), backgroundColor: Colors.red),
+          const SnackBar(content: Text('Unable to post listing. Please check your connection and try again.'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -311,13 +414,14 @@ class _SellPartScreenState extends State<SellPartScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      body: SafeArea(
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               // 1. Photo Section
               _buildSectionHeader('Part Photos *', 'Add photos showing OEM tags, connectors & condition'),
               const SizedBox(height: 10),
@@ -367,36 +471,18 @@ class _SellPartScreenState extends State<SellPartScreen> {
                               top: 4,
                               right: 14,
                               child: GestureDetector(
-                                onTap: () => setState(() => _selectedFiles.remove(f)),
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: const BoxDecoration(color: Color(0xFFEF4444), shape: BoxShape.circle),
-                                  child: const Icon(Icons.close_rounded, color: Colors.white, size: 12),
-                                ),
-                              ),
-                            ),
-                          ],
-                        )),
-
-                    // Attached Web URLs
-                    ..._imageUrls.map((url) => Stack(
-                          children: [
-                            Container(
-                              width: 105,
-                              height: 105,
-                              margin: const EdgeInsets.only(right: 10),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: const Color(0xFFE2E8F0)),
-                              ),
-                              clipBehavior: Clip.antiAlias,
-                              child: Image.network(url, fit: BoxFit.cover),
-                            ),
-                            Positioned(
-                              top: 4,
-                              right: 14,
-                              child: GestureDetector(
-                                onTap: () => setState(() => _imageUrls.remove(url)),
+                                onTap: () {
+                                  setState(() => _selectedFiles.remove(f));
+                                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('🗑️ Photo removed from listing.'),
+                                      backgroundColor: Color(0xFF475569),
+                                      behavior: SnackBarBehavior.floating,
+                                      duration: Duration(seconds: 1),
+                                    ),
+                                  );
+                                },
                                 child: Container(
                                   padding: const EdgeInsets.all(4),
                                   decoration: const BoxDecoration(color: Color(0xFFEF4444), shape: BoxShape.circle),
@@ -408,41 +494,6 @@ class _SellPartScreenState extends State<SellPartScreen> {
                         )),
                   ],
                 ),
-              ),
-
-              const SizedBox(height: 12),
-              // Web URL fallback field
-              Row(
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 40,
-                      child: TextField(
-                        controller: _directUrlCtrl,
-                        decoration: InputDecoration(
-                          hintText: 'Or paste image URL (https://...)',
-                          hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0075FF),
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    ),
-                    onPressed: _addDirectUrl,
-                    child: const Text('Add', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                  ),
-                ],
               ),
 
               const SizedBox(height: 24),
@@ -519,7 +570,7 @@ class _SellPartScreenState extends State<SellPartScreen> {
               const SizedBox(height: 24),
 
               // 3. Category & Part Identification
-              _buildSectionHeader('Part Category & Taxonomy', 'Categorize this spare part accurately'),
+              _buildSectionHeader('Part Category', 'Select the component category and type'),
               const SizedBox(height: 12),
 
               DropdownButtonFormField<String>(
@@ -540,7 +591,7 @@ class _SellPartScreenState extends State<SellPartScreen> {
 
               DropdownButtonFormField<String>(
                 value: _selectedSubcategory,
-                decoration: _inputDecoration('Sub-Component *', Icons.subdirectory_arrow_right_rounded),
+                decoration: _inputDecoration('Subcategory *', Icons.subdirectory_arrow_right_rounded),
                 items: _categories[_selectedCategory]!.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                 onChanged: (val) {
                   if (val != null) {

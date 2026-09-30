@@ -10,6 +10,7 @@ import 'product_detail_screen.dart';
 import 'edit_listing_screen.dart';
 import 'sell_part_screen.dart';
 import 'auth_screen.dart';
+import '../services/cloudinary_service.dart';
 
 class MyAdsScreen extends StatefulWidget {
   const MyAdsScreen({Key? key}) : super(key: key);
@@ -53,7 +54,7 @@ class _MyAdsScreenState extends State<MyAdsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(currentlySold ? 'Ad marked as ACTIVE ✅' : 'Ad marked as SOLD 🎉'),
+            content: Text(currentlySold ? 'Ad marked as Active' : 'Ad marked as Sold'),
             backgroundColor: const Color(0xFF10B981),
           ),
         );
@@ -61,7 +62,7 @@ class _MyAdsScreenState extends State<MyAdsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating status: $e'), backgroundColor: Colors.red),
+          const SnackBar(content: Text('Unable to update ad. Please try again.'), backgroundColor: Colors.red),
         );
       }
     }
@@ -105,16 +106,37 @@ class _MyAdsScreenState extends State<MyAdsScreen> {
 
     if (confirm == true && mounted) {
       try {
+        final partDoc = await _db.collection('spareParts').doc(partId).get();
+        if (partDoc.exists) {
+          final data = partDoc.data() as Map<String, dynamic>;
+          final images = (data['images'] as List?)?.map((e) => e.toString()).toList() ?? [];
+          final imgUrl = data['imageUrl'] as String?;
+          if (imgUrl != null && imgUrl.isNotEmpty && !images.contains(imgUrl)) {
+            images.add(imgUrl);
+          }
+          if (images.isNotEmpty) {
+            CloudinaryService.deleteImages(images);
+          }
+        }
+
         await _db.collection('spareParts').doc(partId).delete();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Listing deleted successfully.')),
+            const SnackBar(
+              content: Text('🗑️ Listing deleted successfully from marketplace.'),
+              backgroundColor: Color(0xFF0F172A),
+              behavior: SnackBarBehavior.floating,
+            ),
           );
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to delete: $e'), backgroundColor: Colors.red),
+            const SnackBar(
+              content: Text('Unable to delete ad. Please try again.'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
           );
         }
       }

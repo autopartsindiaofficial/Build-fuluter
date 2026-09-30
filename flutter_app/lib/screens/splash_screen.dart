@@ -185,7 +185,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
             ],
           ),
           content: const Text(
-            'A new version of Auto Parts India is available with enhanced marketplace features. Please update to continue.',
+            'A newer update of Auto Parts India is available with improved marketplace features. Please update to continue.',
             style: TextStyle(fontSize: 14, color: Color(0xFF475569), height: 1.45),
           ),
           actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -229,6 +229,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF0A0F1D),
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -336,7 +337,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                         ),
                         const SizedBox(height: 8),
 
-                        // Micro Pill Tag
+                        // Tagline
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                           decoration: BoxDecoration(
@@ -344,18 +345,18 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                             borderRadius: BorderRadius.circular(30),
                             border: Border.all(color: Colors.white.withOpacity(0.25), width: 1),
                           ),
-                          child: Row(
+                          child: const Row(
                             mainAxisSize: MainAxisSize.min,
-                            children: const [
+                            children: [
                               Icon(Icons.verified_rounded, color: Color(0xFF38BDF8), size: 14),
                               SizedBox(width: 6),
                               Text(
-                                'VERIFIED SPARES MARKETPLACE',
+                                'GENUINE AUTO PARTS MARKETPLACE',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 10,
                                   fontWeight: FontWeight.w800,
-                                  letterSpacing: 1.2,
+                                  letterSpacing: 1.1,
                                 ),
                               ),
                             ],
@@ -368,53 +369,26 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
                 const Spacer(flex: 3),
 
-                // Footer Loading & Tagline
+                // Footer
                 FadeTransition(
                   opacity: _footerFade,
                   child: Column(
                     children: [
-                      // Sleek Loader Bar
-                      SizedBox(
-                        width: 44,
-                        height: 3,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(2),
-                          child: const LinearProgressIndicator(
-                            backgroundColor: Color(0xFF1E293B),
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0075FF)),
-                          ),
+                      Text(
+                        'India’s leading auto parts marketplace',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white.withOpacity(0.9),
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 0.2,
                         ),
-                      ),
-                      const SizedBox(height: 18),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF10B981),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'India’s #1 Automobile Parts Network',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.white.withOpacity(0.85),
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: 0.2,
-                            ),
-                          ),
-                        ],
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'v$currentAppVersion • 100% Genuine Guarantee',
+                        '100% Genuine Spares Guaranteed',
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.white.withOpacity(0.5),
+                          color: Colors.white.withOpacity(0.6),
                           fontWeight: FontWeight.w400,
                         ),
                       ),

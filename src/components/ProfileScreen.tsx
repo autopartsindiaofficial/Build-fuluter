@@ -290,9 +290,9 @@ export default function ProfileScreen({
 
       const comp = compareVersions(CURRENT_APP_VERSION, config.latestVersion);
       if (comp >= 0) {
-        setVersionStatusMessage("You're using the latest version.");
+        setVersionStatusMessage("You are up to date!");
       } else {
-        setVersionStatusMessage(`New update v${config.latestVersion} is available!`);
+        setVersionStatusMessage("A new update is available!");
       }
     } catch (e) {
       console.error("Error checking for app updates:", e);
@@ -937,7 +937,7 @@ export default function ProfileScreen({
                   </span>
                   <div>
                     <h4 className="text-xs font-bold text-slate-900">About Auto Parts</h4>
-                    <p className="text-[10px] text-slate-500 mt-0.5">App details and version v{CURRENT_APP_VERSION}</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">Learn more about Auto Parts India</p>
                   </div>
                 </div>
                 <ChevronRight size={16} className="text-slate-400" />
@@ -958,7 +958,7 @@ export default function ProfileScreen({
                   </span>
                   <div>
                     <h4 className="text-xs font-bold text-slate-900">Check for Updates</h4>
-                    <p className="text-[10px] text-slate-500 mt-0.5">App version check & release notes</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">Check for newer features & improvements</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -2088,22 +2088,22 @@ export default function ProfileScreen({
               </div>
 
               <div>
-                <h3 className="text-lg font-black text-slate-900 tracking-tight">Auto Parts Market</h3>
-                <p className="text-xs text-slate-500 font-medium mt-0.5">Android APK & Web Version Management</p>
+                <h3 className="text-lg font-black text-slate-900 tracking-tight">Auto Parts India</h3>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">Stay updated with the latest marketplace features</p>
               </div>
 
               {/* Version Metrics Table (Current, Last Checked, Latest Version) */}
               <div className="grid grid-cols-3 gap-2 p-3 bg-slate-50 rounded-2xl border border-slate-100/80 font-mono text-left">
                 <div className="p-2 space-y-1">
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block font-sans">Current Version</span>
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block font-sans">Installed</span>
                   <span className="text-xs font-black text-slate-800 block">v{CURRENT_APP_VERSION}</span>
                 </div>
                 <div className="p-2 border-x border-slate-200/60 space-y-1">
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block font-sans">Last Checked</span>
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block font-sans">Checked</span>
                   <span className="text-[10px] font-bold text-slate-600 block truncate">{lastChecked || "Just now"}</span>
                 </div>
                 <div className="p-2 space-y-1">
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-indigo-500 block font-sans">Latest Version</span>
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-indigo-500 block font-sans">Latest</span>
                   <span className="text-xs font-black text-indigo-700 block">
                     {appVersionConfig ? `v${appVersionConfig.latestVersion}` : "v" + CURRENT_APP_VERSION}
                   </span>
@@ -2132,7 +2132,7 @@ export default function ProfileScreen({
               {appVersionConfig && compareVersions(CURRENT_APP_VERSION, appVersionConfig.latestVersion) < 0 && (
                 <div className="bg-indigo-50/50 border border-indigo-100 rounded-2xl p-4 text-left space-y-2">
                   <div className="flex justify-between items-center text-xs font-bold text-slate-800">
-                    <span>Release Notes (v{appVersionConfig.latestVersion})</span>
+                    <span>What's New</span>
                     <span className="text-[10px] font-medium text-slate-500">{appVersionConfig.releaseDate}</span>
                   </div>
                   <p className="text-xs text-slate-600 leading-relaxed font-sans whitespace-pre-line">

@@ -8,6 +8,7 @@ interface PullToRefreshProps {
   className?: string;
   pullThreshold?: number;
   disabled?: boolean;
+  id?: string;
 }
 
 export default function PullToRefresh({
@@ -15,7 +16,8 @@ export default function PullToRefresh({
   children,
   className = "",
   pullThreshold = 65,
-  disabled = false
+  disabled = false,
+  id
 }: PullToRefreshProps) {
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -103,6 +105,7 @@ export default function PullToRefresh({
         isPullingRef.current = false;
         setPullDistance(0);
       }}
+      id={id}
       className={`relative w-full h-full overflow-y-auto overscroll-y-contain ${className}`}
       style={{
         WebkitOverflowScrolling: "touch",

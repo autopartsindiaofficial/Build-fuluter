@@ -22,9 +22,49 @@
     <link rel="dns-prefetch" href="https://firestore.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,700;1,800&family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <style>
+    html, body {
+      background-color: #0075FF;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+    }
+    #initial-splash {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      background: #0075FF;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px;
+      box-sizing: border-box;
+      z-index: 99999;
+      user-select: none;
+    }
+  </style>
   </head>
-  <body>
-    <div id="root"></div>
+  <body style="background-color: #0075FF; margin: 0; padding: 0;">
+    <div id="root">
+      <div id="initial-splash">
+        <div style="flex: 1;"></div>
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; width: 100%; max-width: 340px; padding: 0 16px; box-sizing: border-box;">
+          <img src="/assets/app_logo.png" alt="Auto Parts INDIA" style="width: 100%; max-width: 320px; height: auto; object-fit: contain; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.15));" />
+        </div>
+        <div style="flex: 1;"></div>
+        <div style="padding-bottom: 32px; text-align: center;">
+          <p style="color: rgba(255, 255, 255, 0.95); font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; font-weight: 500; letter-spacing: 0.3px;">
+            India’s leading auto parts marketplace
+          </p>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -178,7 +178,7 @@ export default function NotificationsScreen({
               </div>
               <div>
                 <h1 className="text-base font-bold text-white leading-tight">Notifications</h1>
-                <p className="text-[11px] text-slate-400">System broadcasts & announcements</p>
+                <p className="text-[11px] text-slate-400">Updates & Announcements</p>
               </div>
             </div>
           </div>
@@ -295,7 +295,7 @@ export default function NotificationsScreen({
           <div className="space-y-3">
             {visibleAnnouncements.map((ann) => {
               const isUnread = !ann.isRead;
-              const title = ann.title || "System Notification";
+              const title = ann.title || "Announcement";
               const text = ann.text || ann.message || "";
               return (
                 <div
@@ -355,7 +355,7 @@ export default function NotificationsScreen({
                       <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-row items-center justify-between text-[11px]">
                         <div className="flex flex-row items-center gap-1.5 text-slate-400">
                           <ShieldCheck size={12} className="text-blue-500" />
-                          <span className="text-[11px] text-slate-400">System Administrator</span>
+                          <span className="text-[11px] text-slate-500 font-medium">AutoParts Team</span>
                         </div>
 
                         {isUnread ? (

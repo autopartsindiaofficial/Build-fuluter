@@ -55,7 +55,7 @@ export default function CameraCaptureModal({
 
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error("Camera API is not supported in this browser. Please use the direct camera capture fallback.");
+        throw new Error("Camera is not available on this browser. Please use the button below to take a photo.");
       }
 
       // Check available devices for flip button
@@ -284,7 +284,7 @@ export default function CameraCaptureModal({
                   id="btn-trigger-native-camera"
                 >
                   <Camera size={14} />
-                  <span>Open System Camera</span>
+                  <span>Take Photo</span>
                 </button>
               </div>
             )}
@@ -339,8 +339,8 @@ export default function CameraCaptureModal({
                   type="button"
                   onClick={() => nativeCameraInputRef.current?.click()}
                   className="p-3 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 rounded-full transition-all cursor-pointer"
-                  title="System Camera"
-                  id="btn-open-system-camera"
+                  title="Take Photo"
+                  id="btn-open-camera"
                 >
                   <ImageIcon size={18} />
                 </button>

@@ -3,8 +3,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:image_picker/image_picker.dart';
 import '../constants/app_colors.dart';
 import '../models/spare_part.dart';
+import '../services/cloudinary_service.dart';
 import 'admin_taxonomy_screen.dart';
 import 'product_detail_screen.dart';
 
@@ -109,13 +111,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('App Version Configuration saved to Cloud!')),
+          const SnackBar(content: Text('App update details saved successfully!')),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save version config: $e')),
+          const SnackBar(content: Text('Unable to save update details. Please try again.')),
         );
       }
     } finally {
@@ -195,7 +197,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
         actions: [
           IconButton(
             icon: const Icon(Icons.account_tree_outlined, color: AppColors.primary),
-            tooltip: 'Vehicle Taxonomy CMS',
+            tooltip: 'Car Brands & Categories',
             onPressed: () {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminTaxonomyScreen()));
             },
@@ -217,7 +219,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
             Tab(icon: Icon(Icons.category_outlined, size: 18), text: 'Top Categories'),
             Tab(icon: Icon(Icons.directions_car_outlined, size: 18), text: 'Car Brands'),
             Tab(icon: Icon(Icons.campaign_outlined, size: 18), text: 'Announcements'),
-            Tab(icon: Icon(Icons.system_update_outlined, size: 18), text: 'Version Control'),
+            Tab(icon: Icon(Icons.system_update_outlined, size: 18), text: 'App Updates'),
           ],
         ),
       ),
@@ -285,7 +287,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Marketplace GMV Listed', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
+                        const Text('Total Marketplace Value', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
                         const SizedBox(height: 6),
                         Text(
                           _currencyFormatter.format(totalGmv),
@@ -317,7 +319,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                       _buildMetricCard('Pending Review', '$pendingListings', Icons.hourglass_top, Colors.amber),
                       _buildMetricCard('Registered Users', '$totalUsers', Icons.people, Colors.purple),
                       _buildMetricCard('Reported Ads', '$reportedListings', Icons.flag, Colors.red),
-                      _buildMetricCard('Live Database', 'Connected', Icons.cloud_done, Colors.teal),
+                      _buildMetricCard('Marketplace Status', 'Online', Icons.cloud_done, Colors.teal),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -325,7 +327,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                   // Quick Shortcuts
                   const Text('Admin Quick Actions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
                   const SizedBox(height: 12),
-                  _buildQuickActionTile('Manage Vehicle Taxonomy', 'Add and edit car brands, models, and parts categories', Icons.account_tree, Colors.blue, () {
+                  _buildQuickActionTile('Manage Brands & Models', 'Add and edit car brands, models, and parts categories', Icons.account_tree, Colors.blue, () {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminTaxonomyScreen()));
                   }),
                   _buildQuickActionTile('Review Pending Ads', 'Quickly approve or reject new listings', Icons.rate_review, Colors.amber, () {
@@ -997,54 +999,147 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
   void _openBannerDialog(Map<String, dynamic>? banner) {
     final titleCtrl = TextEditingController(text: banner?['title'] ?? '');
     final subtitleCtrl = TextEditingController(text: banner?['subtitle'] ?? '');
-    final imageCtrl = TextEditingController(text: banner?['imageUrl'] ?? '');
     final linkCtrl = TextEditingController(text: banner?['targetLink'] ?? '');
     final tagCtrl = TextEditingController(text: banner?['tag'] ?? 'Special Offer');
     final orderCtrl = TextEditingController(text: '${banner?['order'] ?? 0}');
+    String? currentImage = banner?['imageUrl'];
+    bool isUploadingImage = false;
 
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(banner == null ? 'Add Promotional Banner' : 'Edit Banner'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: 'Banner Title *')),
-              TextField(controller: subtitleCtrl, decoration: const InputDecoration(labelText: 'Subtitle / Description')),
-              TextField(controller: imageCtrl, decoration: const InputDecoration(labelText: 'Image URL *')),
-              TextField(controller: linkCtrl, decoration: const InputDecoration(labelText: 'Target URL / Category Link')),
-              TextField(controller: tagCtrl, decoration: const InputDecoration(labelText: 'Tag (e.g. 50% OFF, Genuine)')),
-              TextField(controller: orderCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Display Order')),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              if (titleCtrl.text.isEmpty || imageCtrl.text.isEmpty) return;
-              final payload = {
-                'title': titleCtrl.text.trim(),
-                'subtitle': subtitleCtrl.text.trim(),
-                'imageUrl': imageCtrl.text.trim(),
-                'targetLink': linkCtrl.text.trim(),
-                'tag': tagCtrl.text.trim(),
-                'order': int.tryParse(orderCtrl.text.trim()) ?? 0,
-                'active': banner?['active'] ?? true,
-                'updatedAt': FieldValue.serverTimestamp(),
-              };
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(banner == null ? 'Add Promotional Banner' : 'Edit Banner', style: const TextStyle(fontWeight: FontWeight.bold)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: 'Banner Title *')),
+                const SizedBox(height: 8),
+                TextField(controller: subtitleCtrl, decoration: const InputDecoration(labelText: 'Subtitle / Description')),
+                const SizedBox(height: 12),
 
-              if (banner == null) {
-                await _db.collection('banners').add(payload);
-              } else {
-                await _db.collection('banners').doc(banner['id']).update(payload);
-              }
-              Navigator.pop(context);
-            },
-            child: const Text('Save'),
+                // Direct Image Upload & Preview Box (No URL needed)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Banner Photo *', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      const SizedBox(height: 8),
+                      if (currentImage != null && currentImage!.isNotEmpty)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Stack(
+                            children: [
+                              CachedNetworkImage(
+                                imageUrl: currentImage!,
+                                height: 110,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                placeholder: (_, __) => Container(height: 110, color: Colors.grey.shade200),
+                                errorWidget: (_, __, ___) => Container(height: 110, color: Colors.grey.shade200, child: const Icon(Icons.image)),
+                              ),
+                              Positioned(
+                                top: 6,
+                                right: 6,
+                                child: GestureDetector(
+                                  onTap: () => setDialogState(() => currentImage = null),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                                    child: const Icon(Icons.close, color: Colors.white, size: 14),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      const SizedBox(height: 8),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0075FF),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: isUploadingImage
+                            ? null
+                            : () async {
+                                final picker = ImagePicker();
+                                final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+                                if (picked != null) {
+                                  setDialogState(() => isUploadingImage = true);
+                                  final uploaded = await CloudinaryService.upload(picked.path);
+                                  setDialogState(() {
+                                    isUploadingImage = false;
+                                    if (uploaded != null) currentImage = uploaded;
+                                  });
+                                }
+                              },
+                        icon: isUploadingImage
+                            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : const Icon(Icons.add_photo_alternate, size: 18),
+                        label: Text(isUploadingImage ? 'Uploading Photo...' : (currentImage == null ? 'Upload Photo from Device' : 'Change Photo')),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+                TextField(controller: linkCtrl, decoration: const InputDecoration(labelText: 'Target Category / Action Link')),
+                const SizedBox(height: 8),
+                TextField(controller: tagCtrl, decoration: const InputDecoration(labelText: 'Tag (e.g. 50% OFF, Genuine)')),
+                const SizedBox(height: 8),
+                TextField(controller: orderCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Display Order')),
+              ],
+            ),
           ),
-        ],
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () async {
+                if (titleCtrl.text.isEmpty || currentImage == null || currentImage!.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a title and upload a banner photo.')));
+                  return;
+                }
+                final payload = {
+                  'title': titleCtrl.text.trim(),
+                  'subtitle': subtitleCtrl.text.trim(),
+                  'imageUrl': currentImage!.trim(),
+                  'targetLink': linkCtrl.text.trim(),
+                  'tag': tagCtrl.text.trim(),
+                  'order': int.tryParse(orderCtrl.text.trim()) ?? 0,
+                  'active': banner?['active'] ?? true,
+                  'updatedAt': FieldValue.serverTimestamp(),
+                };
+
+                if (banner == null) {
+                  await _db.collection('banners').add(payload);
+                } else {
+                  await _db.collection('banners').doc(banner['id']).update(payload);
+                }
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('🎉 Banner saved successfully!'),
+                      backgroundColor: Color(0xFF10B981),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+                Navigator.pop(context);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1069,7 +1164,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                 heroTag: 'seedCats',
                 backgroundColor: const Color(0xFF0F172A),
                 icon: const Icon(Icons.restart_alt, color: Colors.white),
-                label: const Text('Seed Defaults', style: TextStyle(color: Colors.white)),
+                label: const Text('Load Standard', style: TextStyle(color: Colors.white)),
                 onPressed: _seedDefaultCategories,
               ),
               const SizedBox(width: 10),
@@ -1089,7 +1184,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                     children: [
                       const Text('No top categories found.'),
                       const SizedBox(height: 12),
-                      ElevatedButton(onPressed: _seedDefaultCategories, child: const Text('Seed 8 Default Auto Categories')),
+                      ElevatedButton(onPressed: _seedDefaultCategories, child: const Text('Load 8 Standard Auto Categories')),
                     ],
                   ),
                 )
@@ -1124,7 +1219,21 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                               onChanged: (val) => _db.collection('topCategories').doc(data['id']).update({'active': val}),
                             ),
                             IconButton(icon: const Icon(Icons.edit, size: 20), onPressed: () => _openCategoryDialog(data)),
-                            IconButton(icon: const Icon(Icons.delete, color: Colors.red, size: 20), onPressed: () => _db.collection('topCategories').doc(data['id']).delete()),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                              onPressed: () async {
+                                await _db.collection('topCategories').doc(data['id']).delete();
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('🗑️ Category removed.'),
+                                      backgroundColor: Color(0xFF475569),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                }
+                              },
+                            ),
                           ],
                         ),
                       ),
@@ -1138,44 +1247,148 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
 
   void _openCategoryDialog(Map<String, dynamic>? cat) {
     final nameCtrl = TextEditingController(text: cat?['name'] ?? '');
-    final imgCtrl = TextEditingController(text: cat?['imageUrl'] ?? '');
+    final subcatCtrl = TextEditingController(
+      text: cat?['subcategories'] is List
+          ? (cat!['subcategories'] as List).join(', ')
+          : (cat?['subcategories'] ?? ''),
+    );
     final orderCtrl = TextEditingController(text: '${cat?['order'] ?? 0}');
+    String? currentImage = cat?['imageUrl'];
+    bool isUploadingImage = false;
 
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(cat == null ? 'Add Top Category' : 'Edit Category'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Category Name *')),
-            TextField(controller: imgCtrl, decoration: const InputDecoration(labelText: 'Icon / Image URL *')),
-            TextField(controller: orderCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Display Order')),
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(cat == null ? 'Add Top Category' : 'Edit Category', style: const TextStyle(fontWeight: FontWeight.bold)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Category Name *', hintText: 'e.g. Engine & Mechanical')),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: subcatCtrl,
+                  maxLines: 2,
+                  decoration: const InputDecoration(
+                    labelText: 'Sub-Parts / Subcategories',
+                    hintText: 'Comma separated: Turbocharger, Pistons, Timing Belt',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Direct Image Upload & Preview Box
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Category Icon / Photo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      const SizedBox(height: 8),
+                      if (currentImage != null && currentImage!.isNotEmpty)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Stack(
+                            children: [
+                              CachedNetworkImage(
+                                imageUrl: currentImage!,
+                                height: 80,
+                                width: 80,
+                                fit: BoxFit.cover,
+                                errorWidget: (_, __, ___) => Container(height: 80, width: 80, color: Colors.grey.shade200, child: const Icon(Icons.category)),
+                              ),
+                              Positioned(
+                                top: 4,
+                                right: 4,
+                                child: GestureDetector(
+                                  onTap: () => setDialogState(() => currentImage = null),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(3),
+                                    decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                                    child: const Icon(Icons.close, color: Colors.white, size: 12),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      const SizedBox(height: 8),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0075FF),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: isUploadingImage
+                            ? null
+                            : () async {
+                                final picker = ImagePicker();
+                                final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+                                if (picked != null) {
+                                  setDialogState(() => isUploadingImage = true);
+                                  final uploaded = await CloudinaryService.upload(picked.path);
+                                  setDialogState(() {
+                                    isUploadingImage = false;
+                                    if (uploaded != null) currentImage = uploaded;
+                                  });
+                                }
+                              },
+                        icon: isUploadingImage
+                            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : const Icon(Icons.add_photo_alternate, size: 18),
+                        label: Text(isUploadingImage ? 'Uploading...' : (currentImage == null ? 'Upload Icon from Device' : 'Change Photo')),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+                TextField(controller: orderCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Display Order')),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () async {
+                if (nameCtrl.text.isEmpty) return;
+                final payload = {
+                  'name': nameCtrl.text.trim(),
+                  'subcategories': subcatCtrl.text.trim(),
+                  'imageUrl': (currentImage ?? '').trim(),
+                  'order': int.tryParse(orderCtrl.text.trim()) ?? 0,
+                  'active': cat?['active'] ?? true,
+                  'updatedAt': FieldValue.serverTimestamp(),
+                };
+
+                if (cat == null) {
+                  await _db.collection('topCategories').add(payload);
+                } else {
+                  await _db.collection('topCategories').doc(cat['id']).update(payload);
+                }
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('🎉 Category saved successfully!'),
+                      backgroundColor: Color(0xFF10B981),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+                Navigator.pop(context);
+              },
+              child: const Text('Save'),
+            ),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              if (nameCtrl.text.isEmpty) return;
-              final payload = {
-                'name': nameCtrl.text.trim(),
-                'imageUrl': imgCtrl.text.trim(),
-                'order': int.tryParse(orderCtrl.text.trim()) ?? 0,
-                'active': cat?['active'] ?? true,
-                'updatedAt': FieldValue.serverTimestamp(),
-              };
-
-              if (cat == null) {
-                await _db.collection('topCategories').add(payload);
-              } else {
-                await _db.collection('topCategories').doc(cat['id']).update(payload);
-              }
-              Navigator.pop(context);
-            },
-            child: const Text('Save'),
-          ),
-        ],
       ),
     );
   }
@@ -1199,12 +1412,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
     }
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Default Categories Seeded to Cloud Firestore!')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Standard categories added successfully!')));
     }
   }
 
   // ==========================================
-  // TAB 6: CAR BRANDS CMS
+  // TAB 6: CAR BRANDS
   // ==========================================
   Widget _buildCarBrandsTab() {
     return StreamBuilder<QuerySnapshot>(
@@ -1223,7 +1436,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                 heroTag: 'seedBrands',
                 backgroundColor: const Color(0xFF0F172A),
                 icon: const Icon(Icons.restart_alt, color: Colors.white),
-                label: const Text('Seed Brands', style: TextStyle(color: Colors.white)),
+                label: const Text('Load Popular Brands', style: TextStyle(color: Colors.white)),
                 onPressed: _seedDefaultCarBrands,
               ),
               const SizedBox(width: 10),
@@ -1241,9 +1454,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text('No car brands configured.'),
+                      const Text('No car brands found.'),
                       const SizedBox(height: 12),
-                      ElevatedButton(onPressed: _seedDefaultCarBrands, child: const Text('Seed Popular Indian Car Brands')),
+                      ElevatedButton(onPressed: _seedDefaultCarBrands, child: const Text('Load Popular Indian Car Brands')),
                     ],
                   ),
                 )
@@ -1278,7 +1491,21 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                               onChanged: (val) => _db.collection('carBrands').doc(data['id']).update({'active': val}),
                             ),
                             IconButton(icon: const Icon(Icons.edit, size: 20), onPressed: () => _openBrandDialog(data)),
-                            IconButton(icon: const Icon(Icons.delete, color: Colors.red, size: 20), onPressed: () => _db.collection('carBrands').doc(data['id']).delete()),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                              onPressed: () async {
+                                await _db.collection('carBrands').doc(data['id']).delete();
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('🗑️ Car brand removed.'),
+                                      backgroundColor: Color(0xFF475569),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                }
+                              },
+                            ),
                           ],
                         ),
                       ),
@@ -1292,45 +1519,149 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
 
   void _openBrandDialog(Map<String, dynamic>? brand) {
     final nameCtrl = TextEditingController(text: brand?['name'] ?? '');
-    final imgCtrl = TextEditingController(text: brand?['imageUrl'] ?? brand?['logoUrl'] ?? '');
+    final modelsCtrl = TextEditingController(
+      text: brand?['models'] is List
+          ? (brand!['models'] as List).join(', ')
+          : (brand?['models'] ?? ''),
+    );
     final orderCtrl = TextEditingController(text: '${brand?['order'] ?? 0}');
+    String? currentImage = brand?['imageUrl'] ?? brand?['logoUrl'];
+    bool isUploadingImage = false;
 
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(brand == null ? 'Add Car Brand' : 'Edit Car Brand'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Brand Name (e.g. Maruti, Tata) *')),
-            TextField(controller: imgCtrl, decoration: const InputDecoration(labelText: 'Logo URL *')),
-            TextField(controller: orderCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Display Order')),
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(brand == null ? 'Add Car Brand' : 'Edit Car Brand', style: const TextStyle(fontWeight: FontWeight.bold)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Brand Name (e.g. Maruti, Tata) *')),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: modelsCtrl,
+                  maxLines: 2,
+                  decoration: const InputDecoration(
+                    labelText: 'Supported Vehicle Models',
+                    hintText: 'Comma separated: Swift, Baleno, Brezza, Dzire',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Direct Image Upload & Preview Box
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Brand Logo / Icon', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      const SizedBox(height: 8),
+                      if (currentImage != null && currentImage!.isNotEmpty)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Stack(
+                            children: [
+                              CachedNetworkImage(
+                                imageUrl: currentImage!,
+                                height: 80,
+                                width: 80,
+                                fit: BoxFit.contain,
+                                errorWidget: (_, __, ___) => Container(height: 80, width: 80, color: Colors.grey.shade200, child: const Icon(Icons.directions_car)),
+                              ),
+                              Positioned(
+                                top: 4,
+                                right: 4,
+                                child: GestureDetector(
+                                  onTap: () => setDialogState(() => currentImage = null),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(3),
+                                    decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                                    child: const Icon(Icons.close, color: Colors.white, size: 12),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      const SizedBox(height: 8),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0075FF),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: isUploadingImage
+                            ? null
+                            : () async {
+                                final picker = ImagePicker();
+                                final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+                                if (picked != null) {
+                                  setDialogState(() => isUploadingImage = true);
+                                  final uploaded = await CloudinaryService.upload(picked.path);
+                                  setDialogState(() {
+                                    isUploadingImage = false;
+                                    if (uploaded != null) currentImage = uploaded;
+                                  });
+                                }
+                              },
+                        icon: isUploadingImage
+                            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : const Icon(Icons.add_photo_alternate, size: 18),
+                        label: Text(isUploadingImage ? 'Uploading...' : (currentImage == null ? 'Upload Logo from Device' : 'Change Logo')),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+                TextField(controller: orderCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Display Order')),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () async {
+                if (nameCtrl.text.isEmpty) return;
+                final payload = {
+                  'name': nameCtrl.text.trim(),
+                  'models': modelsCtrl.text.trim(),
+                  'imageUrl': (currentImage ?? '').trim(),
+                  'logoUrl': (currentImage ?? '').trim(),
+                  'order': int.tryParse(orderCtrl.text.trim()) ?? 0,
+                  'active': brand?['active'] ?? true,
+                  'updatedAt': FieldValue.serverTimestamp(),
+                };
+
+                if (brand == null) {
+                  await _db.collection('carBrands').add(payload);
+                } else {
+                  await _db.collection('carBrands').doc(brand['id']).update(payload);
+                }
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('🎉 Car brand saved successfully!'),
+                      backgroundColor: Color(0xFF10B981),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+                Navigator.pop(context);
+              },
+              child: const Text('Save'),
+            ),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              if (nameCtrl.text.isEmpty) return;
-              final payload = {
-                'name': nameCtrl.text.trim(),
-                'imageUrl': imgCtrl.text.trim(),
-                'logoUrl': imgCtrl.text.trim(),
-                'order': int.tryParse(orderCtrl.text.trim()) ?? 0,
-                'active': brand?['active'] ?? true,
-                'updatedAt': FieldValue.serverTimestamp(),
-              };
-
-              if (brand == null) {
-                await _db.collection('carBrands').add(payload);
-              } else {
-                await _db.collection('carBrands').doc(brand['id']).update(payload);
-              }
-              Navigator.pop(context);
-            },
-            child: const Text('Save'),
-          ),
-        ],
       ),
     );
   }
@@ -1491,7 +1822,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
   }
 
   // ==========================================
-  // TAB 8: VERSION CONTROL & OTA
+  // TAB 8: APP UPDATES
   // ==========================================
   Widget _buildVersionTab() {
     if (_isLoadingVersion) {
@@ -1510,22 +1841,22 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('App Version & Update Management', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text('App Updates & Release Info', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
-            const Text('Control in-app updates and mandatory version enforcement across Android & iOS.', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+            const Text('Manage marketplace updates and announcement notices for all users.', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
             const SizedBox(height: 16),
-            TextField(controller: _latestVerController, decoration: const InputDecoration(labelText: 'Latest Release Version (e.g. 1.0.1)', border: OutlineInputBorder())),
+            TextField(controller: _latestVerController, decoration: const InputDecoration(labelText: 'Latest App Release (e.g. 1.0.1)', border: OutlineInputBorder())),
             const SizedBox(height: 12),
-            TextField(controller: _minVerController, decoration: const InputDecoration(labelText: 'Minimum Supported Version (e.g. 1.0.0)', border: OutlineInputBorder())),
+            TextField(controller: _minVerController, decoration: const InputDecoration(labelText: 'Minimum Required Release (e.g. 1.0.0)', border: OutlineInputBorder())),
             const SizedBox(height: 12),
-            TextField(controller: _apkUrlController, decoration: const InputDecoration(labelText: 'APK / App Store Download URL', border: OutlineInputBorder())),
+            TextField(controller: _apkUrlController, decoration: const InputDecoration(labelText: 'Download / Store Link', border: OutlineInputBorder())),
             const SizedBox(height: 12),
-            TextField(controller: _releaseNotesController, maxLines: 4, decoration: const InputDecoration(labelText: 'Release Notes', border: OutlineInputBorder())),
+            TextField(controller: _releaseNotesController, maxLines: 4, decoration: const InputDecoration(labelText: 'What’s New in this Update', border: OutlineInputBorder())),
             const SizedBox(height: 12),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Enforce Force Update', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-              subtitle: const Text('Block older app versions until user updates the application', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              title: const Text('Require Immediate Update', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              subtitle: const Text('Prompt users to update before continuing to use the app', style: TextStyle(fontSize: 12, color: Colors.grey)),
               value: _forceUpdate,
               onChanged: (val) => setState(() => _forceUpdate = val),
             ),
@@ -1542,7 +1873,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                 icon: _isSavingVersion
                     ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                     : const Icon(Icons.save),
-                label: Text(_isSavingVersion ? 'Saving to Cloud...' : 'Save & Publish App Version Config'),
+                label: Text(_isSavingVersion ? 'Saving...' : 'Save & Publish Update Details'),
                 onPressed: _isSavingVersion ? null : _saveVersionConfig,
               ),
             ),

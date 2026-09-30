@@ -963,15 +963,6 @@ export default function App() {
 
       {!currentUser ? (
         <div className="w-full md:w-[414px] md:h-[870px] md:rounded-[44px] md:border-[10px] md:border-slate-900 md:shadow-2xl md:relative md:overflow-hidden flex flex-col bg-slate-50 h-[100dvh] max-h-[100dvh]">
-          {/* Simulated Mobile Status Bar */}
-          <div className="hidden md:flex bg-slate-900 text-white px-6 py-1.5 justify-between items-center text-[11px] font-bold select-none z-50">
-            <span>9:41</span>
-            <div className="w-20 h-3 bg-black rounded-full mx-auto" />
-            <div className="flex items-center gap-1.5 text-[10px]">
-              <span>5G</span>
-              <span>100%</span>
-            </div>
-          </div>
           <AuthScreen 
             onAuthSuccess={handleAuthSuccess} 
             logoutMessage={logoutMessage}
@@ -997,15 +988,6 @@ export default function App() {
         </div>
       ) : showAdminDashboard && (currentUser.email === "wwwautoparts2@gmail.com" || currentUser.email === "ym1950394@gmail.com" || currentUser.isSuperAdmin || currentUser.isAdmin || currentUser.role === "admin") ? (
         <div className="w-full md:w-[414px] md:h-[870px] md:rounded-[44px] md:border-[10px] md:border-slate-900 md:shadow-2xl md:relative md:overflow-hidden flex flex-col bg-slate-50 h-[100dvh] max-h-[100dvh]">
-          {/* Simulated Mobile Status Bar */}
-          <div className="hidden md:flex bg-slate-900 text-white px-6 py-1.5 justify-between items-center text-[11px] font-bold select-none z-50">
-            <span>9:41</span>
-            <div className="w-20 h-3 bg-black rounded-full mx-auto" />
-            <div className="flex items-center gap-1.5 text-[10px]">
-              <span>5G</span>
-              <span>100%</span>
-            </div>
-          </div>
           <AdminDashboardScreen
             currentUser={currentUser}
             allParts={parts}
@@ -1019,15 +1001,6 @@ export default function App() {
         </div>
       ) : (
         <div className="w-full md:w-[414px] md:h-[870px] md:rounded-[44px] md:border-[10px] md:border-slate-900 md:shadow-2xl md:relative md:overflow-hidden flex flex-col bg-slate-50 h-[100dvh] max-h-[100dvh]" id="app-shell">
-          {/* Simulated Mobile Status Bar */}
-          <div className="hidden md:flex bg-slate-900 text-white px-6 py-1.5 justify-between items-center text-[11px] font-bold select-none z-50">
-            <span>9:41</span>
-            <div className="w-20 h-3 bg-black rounded-full mx-auto" />
-            <div className="flex items-center gap-1.5 text-[10px]">
-              <span>5G</span>
-              <span>100%</span>
-            </div>
-          </div>
           <InAppNotification
             notification={activeNotification}
             onClose={() => setActiveNotification(null)}

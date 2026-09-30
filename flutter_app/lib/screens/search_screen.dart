@@ -83,6 +83,33 @@ class _SearchScreenState extends State<SearchScreen> {
     if (widget.initialCategory != null) _selectedCategory = widget.initialCategory!;
     if (widget.initialBrand != null) _selectedBrand = widget.initialBrand!;
     _loadRecentSearches();
+    _loadDynamicFilters();
+  }
+
+  Future<void> _loadDynamicFilters() async {
+    try {
+      final catSnap = await _db.collection('topCategories').where('active', isEqualTo: true).get();
+      if (catSnap.docs.isNotEmpty) {
+        for (var doc in catSnap.docs) {
+          final name = (doc.data()['name'] as String? ?? '').trim();
+          if (name.isNotEmpty && !_categories.contains(name)) {
+            _categories.add(name);
+          }
+        }
+      }
+
+      final brandSnap = await _db.collection('carBrands').where('active', isEqualTo: true).get();
+      if (brandSnap.docs.isNotEmpty) {
+        for (var doc in brandSnap.docs) {
+          final name = (doc.data()['name'] as String? ?? '').trim();
+          if (name.isNotEmpty && !_popularBrands.contains(name)) {
+            _popularBrands.add(name);
+          }
+        }
+      }
+
+      if (mounted) setState(() {});
+    } catch (_) {}
   }
 
   @override
@@ -566,6 +593,10 @@ class _SearchScreenState extends State<SearchScreen> {
                   return _buildEmptyState();
                 }
 
+                final screenWidth = MediaQuery.of(context).size.width;
+                final crossAxisCount = screenWidth >= 900 ? 4 : (screenWidth >= 600 ? 3 : 2);
+                final childAspectRatio = screenWidth < 360 ? 0.65 : 0.70;
+
                 return CustomScrollView(
                   slivers: [
                     SliverToBoxAdapter(
@@ -580,9 +611,9 @@ class _SearchScreenState extends State<SearchScreen> {
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
                       sliver: SliverGrid(
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 0.70,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
+                          childAspectRatio: childAspectRatio,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
                         ),

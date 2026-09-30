@@ -42,7 +42,7 @@ import {
   Edit3,
   Trash2
 } from "lucide-react";
-import { SparePart, INDIAN_CAR_BRANDS, CAR_PART_CATEGORIES, CAR_SPARE_PARTS_BY_CATEGORY, POPULAR_LOCATIONS, User, Banner } from "../types";
+import { SparePart, INDIAN_CAR_BRANDS, CAR_PART_CATEGORIES, CAR_SPARE_PARTS_BY_CATEGORY, POPULAR_LOCATIONS, DEFAULT_MODEL_VARIANTS, User, Banner } from "../types";
 import { INDIAN_STATES_AND_DISTRICTS } from "../data/indianLocations";
 import { motion, AnimatePresence } from "motion/react";
 import ImageGalleryModal from "./ImageGalleryModal";
@@ -200,27 +200,25 @@ export default function HomeScreen({
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
   };
-  const [taxonomyLoading, setTaxonomyLoading] = useState(true);
+  const [taxonomyLoading, setTaxonomyLoading] = useState(false);
   const [taxonomyError, setTaxonomyError] = useState<string | null>(null);
   const [taxonomy, setTaxonomy] = React.useState<FullTaxonomyConfig>({
-    categories: [],
+    categories: CAR_PART_CATEGORIES,
     categoryImages: {},
-    subcategories: {},
-    brands: {},
+    subcategories: CAR_SPARE_PARTS_BY_CATEGORY,
+    brands: INDIAN_CAR_BRANDS,
     brandLogos: {},
-    variants: {},
-    states: [],
-    districts: {},
+    variants: DEFAULT_MODEL_VARIANTS,
+    states: INDIAN_STATES_AND_DISTRICTS.map(s => s.state),
+    districts: INDIAN_STATES_AND_DISTRICTS.reduce((acc, s) => ({ ...acc, [s.state]: s.districts }), {}),
     cities: {},
-    locations: []
+    locations: POPULAR_LOCATIONS
   });
 
   React.useEffect(() => {
-    setTaxonomyLoading(true);
-    setTaxonomyError(null);
     const unsub = subscribeToTaxonomyConfig((config) => {
-      setTaxonomy(config);
-      if (config && config.categories && config.categories.length > 0) {
+      if (config) {
+        setTaxonomy(config);
         setTaxonomyLoading(false);
         setTaxonomyError(null);
       }
@@ -244,29 +242,7 @@ export default function HomeScreen({
   const [selectedCondition, setSelectedCondition] = useState("All Conditions");
   const [selectedPart, setSelectedPart] = useState<SparePart | null>(null);
 
-  // Filter change loading transition
-  const [isFilterLoading, setIsFilterLoading] = useState(false);
-  const isFirstFilterMount = React.useRef(true);
-  React.useEffect(() => {
-    if (isFirstFilterMount.current) {
-      isFirstFilterMount.current = false;
-      return;
-    }
-    setIsFilterLoading(true);
-    const timer = setTimeout(() => {
-      setIsFilterLoading(false);
-    }, 220);
-    return () => clearTimeout(timer);
-  }, [
-    selectedBrand,
-    selectedModel,
-    selectedCategory,
-    selectedPartName,
-    selectedCondition,
-    selectedState,
-    selectedDistrict,
-    searchQuery
-  ]);
+  const isFilterLoading = false;
 
   const handleViewPart = (part: SparePart) => {
     if (onViewPart) {
@@ -594,7 +570,7 @@ export default function HomeScreen({
       if (queryOnlyMatches.length > 0) {
         return {
           finalFilteredParts: queryOnlyMatches,
-          fallbackBanner: "No exact matches with current dropdown filters. Showing all matching listings across India."
+          fallbackBanner: "Showing all matching parts across India."
         };
       }
 
@@ -644,7 +620,7 @@ export default function HomeScreen({
           return {
             finalFilteredParts: distMatches,
             fallbackBanner: locationFilterMode === "nearby"
-              ? `No exact matches found within ${nearbyRadiusKm} km. Showing available parts in ${targetDist}.`
+              ? `Showing available parts in ${targetDist}.`
               : null
           };
         }
@@ -665,11 +641,7 @@ export default function HomeScreen({
       if (stateMatches.length > 0) {
         return {
           finalFilteredParts: stateMatches,
-          fallbackBanner: locationFilterMode === "nearby"
-            ? `No listings found within ${nearbyRadiusKm} km. Showing parts in ${targetState}.`
-            : locationFilterMode === "district" && selectedDistrict !== "All Districts"
-              ? `No listings found in ${selectedDistrict}. Showing parts across ${targetState}.`
-              : null
+          fallbackBanner: `Showing parts in ${targetState}.`
         };
       }
     }
@@ -680,7 +652,7 @@ export default function HomeScreen({
       return {
         finalFilteredParts: allIndiaSpecifics,
         fallbackBanner: (selectedState !== "All States" && selectedState !== "All India")
-          ? "No local matches found. Showing available listings across India."
+          ? "Showing available parts across India."
           : null
       };
     }
@@ -1035,8 +1007,8 @@ export default function HomeScreen({
       </header>
 
       {/* Main Scrollable Content Container */}
-      <div className="flex-1 overflow-y-auto min-h-0 pb-28 scroll-smooth overflow-x-hidden" id="home-scrollable-content">
-        <PullToRefresh onRefresh={async () => { if (onRetry) await onRetry(); }}>
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+        <PullToRefresh id="home-scrollable-content" className="pb-28 overflow-x-hidden" onRefresh={async () => { if (onRetry) await onRetry(); }}>
         {/* Category Icons Row with Horizontal Swipe */}
         <div className="bg-white border-b border-slate-200/80 py-2 px-3 shadow-2xs">
           <div className="flex items-center justify-between mb-1.5 px-0.5">
@@ -1382,7 +1354,7 @@ export default function HomeScreen({
                 </span>
               </div>
               <span className="text-[8px] font-extrabold uppercase tracking-wider bg-amber-200/80 text-amber-900 px-1.5 py-0.5 rounded shrink-0">
-                Closest Matches
+                Matches
               </span>
             </div>
           )}
@@ -1399,7 +1371,7 @@ export default function HomeScreen({
               )}
             </div>
             <span className="text-[10px] font-extrabold text-slate-500 bg-slate-200/70 px-2 py-0.5 rounded-full font-mono">
-              {sortedFilteredParts.length} Listed
+              {sortedFilteredParts.length} Available
             </span>
           </div>
 
@@ -1425,7 +1397,7 @@ export default function HomeScreen({
               <span>Retry</span>
             </button>
           </div>
-        ) : (partsLoading || isFilterLoading || (taxonomyLoading && categories.length === 0)) ? (
+        ) : (partsLoading && parts.length === 0) ? (
           <div className="flex flex-col items-center justify-center text-center py-16 px-6 bg-white rounded-2xl border border-slate-200/80 shadow-2xs space-y-3.5 my-2" id="parts-loading-spinner">
             <div className="relative flex items-center justify-center">
               <div className="w-12 h-12 border-3 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
@@ -1435,12 +1407,10 @@ export default function HomeScreen({
             </div>
             <div className="space-y-1">
               <h4 className="text-xs font-black text-slate-800 tracking-wide uppercase">
-                {isFilterLoading ? "Filtering Listings..." : "Loading Spare Parts..."}
+                Loading Spare Parts...
               </h4>
               <p className="text-[11px] text-slate-400 font-medium max-w-xs">
-                {isFilterLoading 
-                  ? "Finding matching parts for your selected filters..." 
-                  : "Fetching verified spare parts across India..."}
+                Fetching spare parts across India...
               </p>
             </div>
           </div>
@@ -2057,7 +2027,7 @@ export default function HomeScreen({
                       </button>
                       <button
                         onClick={async () => {
-                          if (window.confirm("Are you sure you want to permanently delete this listing? This will delete images and data from everywhere.")) {
+                          if (window.confirm("Are you sure you want to permanently delete this listing?")) {
                             try {
                               setIsDeletingPart(true);
                               const targetId = selectedPart.id;

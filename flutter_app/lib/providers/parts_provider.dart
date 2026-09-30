@@ -9,6 +9,7 @@ class PartsProvider extends ChangeNotifier {
   String _selectedBrand = 'All';
   List<String> _wishlistPartIds = [];
   bool _isLoading = false;
+  Stream<List<SparePart>>? _cachedPartsStream;
 
   String get selectedCategory => _selectedCategory;
   String get selectedBrand => _selectedBrand;
@@ -18,12 +19,16 @@ class PartsProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   void selectCategory(String category) {
+    if (_selectedCategory == category) return;
     _selectedCategory = category;
+    _cachedPartsStream = null;
     notifyListeners();
   }
 
   void selectBrand(String brand) {
+    if (_selectedBrand == brand) return;
     _selectedBrand = brand;
+    _cachedPartsStream = null;
     notifyListeners();
   }
 
@@ -47,9 +52,10 @@ class PartsProvider extends ChangeNotifier {
   }
 
   Stream<List<SparePart>> get partsStream {
-    return _firebaseService.getSparePartsStream(
+    _cachedPartsStream ??= _firebaseService.getSparePartsStream(
       category: _selectedCategory == 'All' ? null : _selectedCategory,
       brand: _selectedBrand == 'All' ? null : _selectedBrand,
     );
+    return _cachedPartsStream!;
   }
 }

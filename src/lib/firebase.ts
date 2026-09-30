@@ -326,7 +326,7 @@ export async function uploadImageToCloudinary(
   const preparedFile = await compressImageClientSide(fileOrBase64, 800, 0.8);
 
   const cloudName = metaEnv.VITE_CLOUDINARY_CLOUD_NAME || (typeof process !== "undefined" && (process.env?.VITE_CLOUDINARY_CLOUD_NAME || process.env?.CLOUDINARY_CLOUD_NAME)) || "rqf1hlrx";
-  const primaryPreset = metaEnv.VITE_CLOUDINARY_UPLOAD_PRESET || (typeof process !== "undefined" && process.env?.VITE_CLOUDINARY_UPLOAD_PRESET) || "auto_parts_preset";
+  const primaryPreset = metaEnv.VITE_CLOUDINARY_UPLOAD_PRESET || (typeof process !== "undefined" && process.env?.VITE_CLOUDINARY_UPLOAD_PRESET) || "autoparts_upload";
   const fallbackPreset = "autoparts_upload";
   const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
 
@@ -554,34 +554,6 @@ export async function deduplicateAndCleanupListings(rawParts: SparePart[]): Prom
       }
     } else {
       uniqueListingsByContent.set(part.id, part);
-    }
-  }
-
-  if (duplicateDocIdsToDelete.length > 0 && useFirebase && db) {
-    console.log(`[Auto-Deduplicate Cleanup] Removing ${duplicateDocIdsToDelete.length} duplicate Firestore document(s)...`);
-    for (const docId of duplicateDocIdsToDelete) {
-      if (!docId.startsWith("local-part-")) {
-        try {
-          const docRef = doc(db, "products", "listings", "items", docId);
-          await deleteDoc(docRef);
-          console.log(`[Auto-Deduplicate Cleanup] Deleted duplicate Firestore document: ${docId}`);
-        } catch (err) {
-          console.warn(`[Auto-Deduplicate Cleanup] Error deleting duplicate document ${docId}:`, err);
-        }
-      }
-    }
-  }
-
-  const localData = localStorage.getItem(LOCAL_STORAGE_PARTS_KEY);
-  if (localData && duplicateDocIdsToDelete.length > 0) {
-    try {
-      const localList: SparePart[] = JSON.parse(localData);
-      const filteredLocalList = localList.filter(lp => !duplicateDocIdsToDelete.includes(lp.id));
-      if (filteredLocalList.length !== localList.length) {
-        localStorage.setItem(LOCAL_STORAGE_PARTS_KEY, JSON.stringify(filteredLocalList));
-      }
-    } catch (e) {
-      // ignore
     }
   }
 
@@ -3527,25 +3499,24 @@ export function subscribeToTaxonomyConfig(
           if (cities === null) missingKeys.push("cities");
           if (locations === null) missingKeys.push("locations");
 
-          if (missingKeys.length > 0) {
-            await seedDefaultTaxonomyToFirestore(missingKeys);
-            return;
-          }
-
           const fullConfig: FullTaxonomyConfig = {
-            categories: categories || [],
+            categories: (categories && categories.length > 0) ? categories : CAR_PART_CATEGORIES,
             categoryImages: categoryImages || {},
-            subcategories: subcategories || {},
-            brands: brands || {},
+            subcategories: (subcategories && Object.keys(subcategories).length > 0) ? subcategories : CAR_SPARE_PARTS_BY_CATEGORY,
+            brands: (brands && Object.keys(brands).length > 0) ? brands : INDIAN_CAR_BRANDS,
             brandLogos: brandLogos || {},
-            variants: variants || {},
-            states: states || [],
-            districts: districts || {},
+            variants: variants || DEFAULT_MODEL_VARIANTS,
+            states: (states && states.length > 0) ? states : INDIAN_STATES_AND_DISTRICTS.map(s => s.state),
+            districts: districts || INDIAN_STATES_AND_DISTRICTS.reduce((acc, s) => ({ ...acc, [s.state]: s.districts }), {}),
             cities: cities || {},
-            locations: locations || []
+            locations: (locations && locations.length > 0) ? locations : POPULAR_LOCATIONS
           };
 
           callback(fullConfig);
+
+          if (missingKeys.length > 0) {
+            seedDefaultTaxonomyToFirestore(missingKeys).catch(() => {});
+          }
         },
         (error) => {
           console.warn("Firestore subscribeToTaxonomyConfig warning:", error);

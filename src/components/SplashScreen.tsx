@@ -78,14 +78,10 @@ export default function SplashScreen({
           {/* Centered Brand Unit matching user's image */}
           <div className="flex flex-col items-center justify-center text-center relative z-10 w-full max-w-sm px-4">
             <motion.div
-              initial={{ scale: 0.92, opacity: 0 }}
+              initial={{ scale: 1, opacity: 1 }}
               animate={{ 
                 scale: 1,
                 opacity: 1
-              }}
-              transition={{ 
-                duration: 0.45,
-                ease: [0.16, 1, 0.3, 1]
               }}
               className="w-full flex flex-col items-center justify-center"
             >

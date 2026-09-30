@@ -122,13 +122,21 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
                         _commentController.clear();
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Review submitted! ⭐'), backgroundColor: Color(0xFF10B981)),
+                            const SnackBar(
+                              content: Text('⭐ Review submitted successfully! Thank you.'),
+                              backgroundColor: Color(0xFF10B981),
+                              behavior: SnackBarBehavior.floating,
+                            ),
                           );
                         }
                       } catch (e) {
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                            const SnackBar(
+                              content: Text('Unable to submit review. Please try again.'),
+                              backgroundColor: Colors.red,
+                              behavior: SnackBarBehavior.floating,
+                            ),
                           );
                         }
                       }

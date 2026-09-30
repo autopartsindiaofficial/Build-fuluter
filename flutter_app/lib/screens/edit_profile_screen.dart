@@ -25,6 +25,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   File? _pickedImageFile;
   String? _currentPhotoUrl;
+  String? _oldPhotoUrlToDelete;
+  bool _photoRemoved = false;
   bool _isLoading = false;
   bool _isFetching = true;
 
@@ -129,6 +131,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   _pickImage(ImageSource.gallery);
                 },
               ),
+              if (_currentPhotoUrl != null || _pickedImageFile != null)
+                ListTile(
+                  leading: const Icon(Icons.delete_outline, color: Color(0xFFEF4444)),
+                  title: const Text('Remove Photo', style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.bold)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    setState(() {
+                      _oldPhotoUrlToDelete = _currentPhotoUrl;
+                      _currentPhotoUrl = null;
+                      _pickedImageFile = null;
+                      _photoRemoved = true;
+                    });
+                  },
+                ),
             ],
           ),
         ),
@@ -144,13 +160,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     setState(() => _isLoading = true);
 
     try {
-      String? finalPhotoUrl = _currentPhotoUrl;
+      String? finalPhotoUrl = _photoRemoved ? null : _currentPhotoUrl;
 
       if (_pickedImageFile != null) {
         final uploaded = await _cloudinary.uploadImage(_pickedImageFile!.path);
         if (uploaded != null && uploaded.isNotEmpty) {
+          if (_currentPhotoUrl != null && _currentPhotoUrl!.isNotEmpty) {
+            CloudinaryService.deleteImage(_currentPhotoUrl!);
+          }
           finalPhotoUrl = uploaded;
         }
+      } else if (_photoRemoved && _oldPhotoUrlToDelete != null) {
+        CloudinaryService.deleteImage(_oldPhotoUrlToDelete!);
       }
 
       final newName = _nameCtrl.text.trim();
@@ -162,9 +183,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (newName.isNotEmpty) {
         await user.updateDisplayName(newName);
       }
-      if (finalPhotoUrl != null && finalPhotoUrl.isNotEmpty) {
-        await user.updatePhotoURL(finalPhotoUrl);
-      }
+      await user.updatePhotoURL(finalPhotoUrl);
 
       // Update Firestore document
       await _db.collection('users').doc(user.uid).set({
@@ -187,6 +206,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           const SnackBar(
             content: Text('🎉 Profile updated successfully!'),
             backgroundColor: Color(0xFF16A34A),
+            behavior: SnackBarBehavior.floating,
           ),
         );
         Navigator.pop(context, true);
@@ -194,7 +214,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating profile: $e'), backgroundColor: Colors.red),
+          const SnackBar(
+            content: Text('Unable to update profile. Please try again.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {

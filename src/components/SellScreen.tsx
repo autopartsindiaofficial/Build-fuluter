@@ -67,8 +67,6 @@ export default function SellScreen({ currentUser, onPublishSuccess, parts }: Sel
 
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
-  const [directImageUrlInput, setDirectImageUrlInput] = useState("");
-  const [showUrlInput, setShowUrlInput] = useState(false);
   const [showImageSourceModal, setShowImageSourceModal] = useState(false);
   const [showCameraModal, setShowCameraModal] = useState(false);
   const nativeCameraInputRef = useRef<HTMLInputElement>(null);
@@ -246,22 +244,6 @@ export default function SellScreen({ currentUser, onPublishSuccess, parts }: Sel
     }
     // reset input
     e.target.value = "";
-  };
-
-  const handleAddDirectUrl = () => {
-    const url = directImageUrlInput.trim();
-    if (!url) return;
-    if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("data:image/")) {
-      setError("Please enter a valid image URL (e.g. https://... or data:image/...)");
-      return;
-    }
-    if (uploadedImages.length >= 6) {
-      setError("Maximum 6 images allowed per listing.");
-      return;
-    }
-    setError(null);
-    setUploadedImages(prev => [...prev, url]);
-    setDirectImageUrlInput("");
   };
 
   const handleRemoveImage = (indexToRemove: number) => {
@@ -525,11 +507,11 @@ export default function SellScreen({ currentUser, onPublishSuccess, parts }: Sel
         <div className="w-16 h-16 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
           <CheckCircle2 size={38} className="animate-bounce" />
         </div>
-        <h2 className="text-xl font-black tracking-tight text-white">✅ Ad posted successfully.</h2>
+        <h2 className="text-xl font-black tracking-tight text-white">Ad posted successfully!</h2>
         <p className="text-xs text-slate-300 mt-2 max-w-xs leading-relaxed font-medium">
-          Your spare part listing is now live across India! Buyers can contact you directly via phone or in-app chat.
+          Your spare part listing is now live! Buyers can contact you directly via phone or chat.
         </p>
-        <span className="text-[11px] text-[#60A5FA] mt-6 font-mono font-bold animate-pulse">Redirecting to marketplace...</span>
+        <span className="text-xs text-blue-300 mt-5 font-semibold">Opening your listing...</span>
       </div>
     );
   }
@@ -601,13 +583,7 @@ export default function SellScreen({ currentUser, onPublishSuccess, parts }: Sel
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {isTaxonomyLoading && (
-            <div className="flex items-center gap-1 text-[9px] text-slate-300 font-semibold bg-slate-800 px-2 py-0.5 rounded-full border border-slate-700">
-              <Loader2 size={9} className="animate-spin text-slate-300" />
-              <span>Syncing...</span>
-            </div>
-          )}
-          <span className="text-[10px] font-mono font-black bg-slate-800 text-slate-200 px-2.5 py-0.5 rounded-full border border-slate-700">
+          <span className="text-[10px] font-black bg-slate-800 text-slate-200 px-2.5 py-0.5 rounded-full border border-slate-700">
             Free Listing
           </span>
         </div>
@@ -856,44 +832,6 @@ export default function SellScreen({ currentUser, onPublishSuccess, parts }: Sel
               </div>
             </div>
           )}
-
-          {/* Direct Image URL Option / Fallback */}
-          <div className="pt-2 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={() => setShowUrlInput(prev => !prev)}
-              className="text-[11px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer transition-colors"
-              id="btn-toggle-url-input"
-            >
-              <span>{showUrlInput ? "− Hide Image URL Input" : "+ Or Add Image by Direct URL"}</span>
-            </button>
-
-            {showUrlInput && (
-              <div className="mt-2 flex gap-2 items-center">
-                <input
-                  type="url"
-                  value={directImageUrlInput}
-                  onChange={(e) => setDirectImageUrlInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleAddDirectUrl();
-                    }
-                  }}
-                  placeholder="https://example.com/part-photo.jpg"
-                  className="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-900 font-medium"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddDirectUrl}
-                  disabled={!directImageUrlInput.trim() || uploadedImages.length >= 6}
-                  className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white rounded-xl text-xs font-bold shrink-0 cursor-pointer shadow-xs transition-all"
-                >
-                  Add URL
-                </button>
-              </div>
-            )}
-          </div>
 
           {/* Smart AI Auto-Fill Button */}
           <div className="pt-1">

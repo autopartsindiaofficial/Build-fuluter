@@ -14,8 +14,6 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  String _selectedFilter = 'all'; // 'all', 'offers', 'chats', 'system'
-
   FirebaseFirestore get _db {
     try {
       return FirebaseFirestore.instanceFor(
@@ -236,7 +234,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       itemBuilder: (context, index) {
                         final doc = docs[index];
                         final data = doc.data() as Map<String, dynamic>;
-                        final title = data['title'] ?? 'Notification';
+                        String title = data['title'] ?? 'Notification';
+                        if (title.toLowerCase().contains('system notification') || title.trim().toLowerCase() == 'system') {
+                          title = 'Marketplace Announcement';
+                        }
                         final message = data['message'] ?? data['body'] ?? '';
                         final isRead = data['isRead'] == true || data['read'] == true;
                         final ts = data['createdAt'] as Timestamp?;

@@ -362,7 +362,7 @@ class ProfileScreen extends StatelessWidget {
                   children: [
                     Container(width: 4, height: 16, decoration: BoxDecoration(color: const Color(0xFFF59E0B), borderRadius: BorderRadius.circular(2))),
                     const SizedBox(width: 8),
-                    const Text('Admin Management Portal', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF0F172A))),
+                    const Text('Marketplace Management', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF0F172A))),
                   ],
                 ),
               ),
@@ -374,16 +374,16 @@ class ProfileScreen extends StatelessWidget {
                     _buildMenuTile(
                       icon: Icons.admin_panel_settings_rounded,
                       iconColor: const Color(0xFFF59E0B),
-                      title: 'Platform Admin Dashboard',
-                      subtitle: 'Moderate listings, verify users & ban accounts',
+                      title: 'Marketplace Console',
+                      subtitle: 'Review listings, manage members & reports',
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminDashboardScreen())),
                     ),
                     const Divider(height: 1, indent: 56, color: Color(0xFFF1F5F9)),
                     _buildMenuTile(
                       icon: Icons.alt_route_rounded,
                       iconColor: const Color(0xFF0075FF),
-                      title: 'Manage Brands & Categories',
-                      subtitle: 'Add car models, subcategories & OEM types',
+                      title: 'Car Brands & Categories',
+                      subtitle: 'Manage vehicle catalog, models & categories',
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminTaxonomyScreen())),
                     ),
                   ],
@@ -489,8 +489,8 @@ class ProfileScreen extends StatelessWidget {
                   _buildMenuTile(
                     icon: Icons.tune_rounded,
                     iconColor: const Color(0xFF64748B),
-                    title: 'Settings & Cache',
-                    subtitle: 'App preferences, notifications & storage',
+                    title: 'App Settings',
+                    subtitle: 'Notifications, sounds & storage',
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
                   ),
                 ],
@@ -519,9 +519,9 @@ class ProfileScreen extends StatelessWidget {
               ),
 
             const SizedBox(height: 16),
-            Text(
-              'Auto Parts India v1.0.0 • 100% Genuine Marketplace',
-              style: TextStyle(fontSize: 11, color: const Color(0xFF94A3B8), fontWeight: FontWeight.w500),
+            const Text(
+              'Auto Parts India • 100% Genuine Marketplace',
+              style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8), fontWeight: FontWeight.w500),
             ),
           ],
         ),

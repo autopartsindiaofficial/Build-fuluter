@@ -33,6 +33,7 @@ class _EditListingScreenState extends State<EditListingScreen> {
   late String _selectedCondition;
   late bool _isNegotiable;
   late List<String> _currentImages;
+  final List<String> _removedImages = [];
   final List<File> _newImages = [];
   bool _isLoading = false;
 
@@ -95,6 +96,17 @@ class _EditListingScreenState extends State<EditListingScreen> {
         setState(() {
           _newImages.add(File(picked.path));
         });
+        if (mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('📸 New photo added!'),
+              backgroundColor: Color(0xFF10B981),
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
       }
     } catch (e) {
       debugPrint('Error picking image: $e');
@@ -148,6 +160,11 @@ class _EditListingScreenState extends State<EditListingScreen> {
     setState(() => _isLoading = true);
 
     try {
+      // Trigger deletion of removed images from Cloudinary storage
+      if (_removedImages.isNotEmpty) {
+        CloudinaryService.deleteImages(_removedImages);
+      }
+
       List<String> finalImageUrls = List<String>.from(_currentImages);
 
       for (var f in _newImages) {
@@ -189,7 +206,7 @@ class _EditListingScreenState extends State<EditListingScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating listing: $e'), backgroundColor: Colors.red),
+          const SnackBar(content: Text('Unable to update listing. Please try again.'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -210,13 +227,14 @@ class _EditListingScreenState extends State<EditListingScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      body: SafeArea(
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               // Photos Section
               const Text('Part Photos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A))),
               const SizedBox(height: 8),
@@ -263,7 +281,21 @@ class _EditListingScreenState extends State<EditListingScreen> {
                               top: 4,
                               right: 14,
                               child: GestureDetector(
-                                onTap: () => setState(() => _currentImages.remove(url)),
+                                onTap: () {
+                                  setState(() {
+                                    _removedImages.add(url);
+                                    _currentImages.remove(url);
+                                  });
+                                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('🗑️ Photo removed from listing.'),
+                                      backgroundColor: Color(0xFF475569),
+                                      behavior: SnackBarBehavior.floating,
+                                      duration: Duration(seconds: 1),
+                                    ),
+                                  );
+                                },
                                 child: Container(
                                   padding: const EdgeInsets.all(3),
                                   decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
@@ -290,7 +322,18 @@ class _EditListingScreenState extends State<EditListingScreen> {
                               top: 4,
                               right: 14,
                               child: GestureDetector(
-                                onTap: () => setState(() => _newImages.remove(f)),
+                                onTap: () {
+                                  setState(() => _newImages.remove(f));
+                                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('🗑️ Photo removed.'),
+                                      backgroundColor: Color(0xFF475569),
+                                      behavior: SnackBarBehavior.floating,
+                                      duration: Duration(seconds: 1),
+                                    ),
+                                  );
+                                },
                                 child: Container(
                                   padding: const EdgeInsets.all(3),
                                   decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),

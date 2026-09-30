@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -12,6 +13,14 @@ import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Set status bar & navigation bar to match dark splash background immediately
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.light,
+    systemNavigationBarColor: Color(0xFF0A0F1D),
+    systemNavigationBarIconBrightness: Brightness.light,
+  ));
   
   // Note: For Android/iOS native setup, make sure google-services.json / GoogleService-Info.plist are placed in android/app and ios/Runner
   try {
@@ -53,6 +62,17 @@ class AutoPartsIndiaApp extends StatelessWidget {
             scrolledUnderElevation: 1,
           ),
         ),
+        builder: (context, child) {
+          final mediaQuery = MediaQuery.of(context);
+          final clampedTextScaler = mediaQuery.textScaler.clamp(
+            minScaleFactor: 0.85,
+            maxScaleFactor: 1.25,
+          );
+          return MediaQuery(
+            data: mediaQuery.copyWith(textScaler: clampedTextScaler),
+            child: child ?? const SizedBox.shrink(),
+          );
+        },
         home: const SplashScreen(),
       ),
     );

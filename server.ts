@@ -147,6 +147,59 @@ async function startServer() {
   app.post("/api/delete-cloudinary-image", handleCloudinaryDelete);
   app.post("/api/cloudinary/delete", handleCloudinaryDelete);
 
+  // Direct Image Upload Proxy for Web and Mobile clients
+  app.post("/api/upload-image", async (req: express.Request, res: express.Response) => {
+    try {
+      const { image, file, upload_preset, folder } = req.body || {};
+      const imagePayload = image || file;
+
+      if (!imagePayload) {
+        return res.status(400).json({ error: "Missing image file or data" });
+      }
+
+      // If it's already an http link, return directly
+      if (typeof imagePayload === "string" && (imagePayload.startsWith("http://") || imagePayload.startsWith("https://"))) {
+        return res.json({ success: true, secure_url: imagePayload, public_id: "" });
+      }
+
+      const cloudName = process.env.CLOUDINARY_CLOUD_NAME || process.env.VITE_CLOUDINARY_CLOUD_NAME || "rqf1hlrx";
+      const preset = upload_preset || process.env.VITE_CLOUDINARY_UPLOAD_PRESET || "autoparts_upload";
+
+      const payload: Record<string, string> = {
+        file: imagePayload,
+        upload_preset: preset,
+      };
+      if (folder) {
+        payload.folder = folder;
+      }
+
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.warn("[Cloudinary Proxy Upload Failed]:", errText);
+        return res.status(response.status || 500).json({ error: "Image upload failed" });
+      }
+
+      const data = await response.json();
+      return res.json({
+        success: true,
+        secure_url: data.secure_url,
+        public_id: data.public_id,
+        width: data.width,
+        height: data.height,
+        format: data.format,
+      });
+    } catch (err: any) {
+      console.error("[Upload API Error]:", err);
+      return res.status(500).json({ error: err?.message || "Internal server error during upload" });
+    }
+  });
+
   // Chat Notification Endpoint
   app.post("/api/notifications/send", async (req, res) => {
     try {

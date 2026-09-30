@@ -24,9 +24,13 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final PageController _bannerPageController = PageController();
-  int _currentBannerIndex = 0;
+  final ValueNotifier<int> _currentBannerIndex = ValueNotifier<int>(0);
   Timer? _bannerTimer;
   String _selectedCity = 'All India';
+
+  late final Stream<QuerySnapshot> _bannersStream;
+  late final Stream<QuerySnapshot> _categoriesStream;
+  late final Stream<QuerySnapshot> _brandsStream;
 
   // Default Fallback Banners
   final List<Map<String, dynamic>> _defaultBanners = [
@@ -121,6 +125,9 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _bannersStream = _db.collection('banners').where('active', isEqualTo: true).snapshots();
+    _categoriesStream = _db.collection('topCategories').where('active', isEqualTo: true).snapshots();
+    _brandsStream = _db.collection('carBrands').where('active', isEqualTo: true).snapshots();
     _startBannerAutoScroll();
   }
 
@@ -128,13 +135,14 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _bannerTimer?.cancel();
     _bannerPageController.dispose();
+    _currentBannerIndex.dispose();
     super.dispose();
   }
 
   void _startBannerAutoScroll() {
     _bannerTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
       if (_bannerPageController.hasClients) {
-        int nextPage = _currentBannerIndex + 1;
+        int nextPage = _currentBannerIndex.value + 1;
         if (nextPage >= 3) nextPage = 0;
         _bannerPageController.animateToPage(
           nextPage,
@@ -358,6 +366,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onRefresh: _handleRefresh,
         color: const Color(0xFF0075FF),
         child: CustomScrollView(
+          key: const PageStorageKey<String>('home_scroll_view'),
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             // 1. Search Bar Trigger (High-end Marketplace Style)
@@ -458,11 +467,12 @@ class _HomeScreenState extends State<HomeScreen> {
             // 2. Promotional Banners Carousel (Live from Firestore with fallback)
             SliverToBoxAdapter(
               child: StreamBuilder<QuerySnapshot>(
-                stream: _db.collection('banners').where('active', isEqualTo: true).snapshots(),
+                stream: _bannersStream,
                 builder: (context, bannerSnap) {
                   List<Map<String, dynamic>> bannersList = [];
                   if (bannerSnap.hasData && bannerSnap.data!.docs.isNotEmpty) {
                     bannersList = bannerSnap.data!.docs.map((d) => d.data() as Map<String, dynamic>).toList();
+                    bannersList.sort((a, b) => ((a['order'] ?? 0) as num).compareTo((b['order'] ?? 0) as num));
                   }
                   if (bannersList.isEmpty) {
                     bannersList = _defaultBanners;
@@ -476,88 +486,99 @@ class _HomeScreenState extends State<HomeScreen> {
                           height: 145,
                           child: PageView.builder(
                             controller: _bannerPageController,
-                            onPageChanged: (idx) => setState(() => _currentBannerIndex = idx),
+                            onPageChanged: (idx) => _currentBannerIndex.value = idx,
                             itemCount: bannersList.length,
                             itemBuilder: (context, idx) {
                               final b = bannersList[idx];
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(18),
-                                  child: Stack(
-                                    children: [
-                                      // Background Image
-                                      Positioned.fill(
-                                        child: CachedNetworkImage(
-                                          imageUrl: b['imageUrl'] ?? '',
-                                          fit: BoxFit.cover,
-                                          errorWidget: (_, __, ___) => Container(color: const Color(0xFF1E293B)),
+                              return GestureDetector(
+                                onTap: () {
+                                  final target = (b['targetCategory'] ?? b['targetLink'] ?? '').toString().trim();
+                                  if (target.isNotEmpty && target != 'All') {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => SearchScreen(initialQuery: target)),
+                                    );
+                                  }
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(18),
+                                    child: Stack(
+                                      children: [
+                                        // Background Image
+                                        Positioned.fill(
+                                          child: CachedNetworkImage(
+                                            imageUrl: b['imageUrl'] ?? '',
+                                            fit: BoxFit.cover,
+                                            errorWidget: (_, __, ___) => Container(color: const Color(0xFF1E293B)),
+                                          ),
                                         ),
-                                      ),
-                                      // Dark Gradient Overlay with specular finish
-                                      Positioned.fill(
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              colors: [
-                                                Colors.black.withOpacity(0.85),
-                                                Colors.black.withOpacity(0.35),
-                                              ],
-                                              begin: Alignment.centerLeft,
-                                              end: Alignment.centerRight,
+                                        // Dark Gradient Overlay with specular finish
+                                        Positioned.fill(
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                colors: [
+                                                  Colors.black.withOpacity(0.85),
+                                                  Colors.black.withOpacity(0.35),
+                                                ],
+                                                begin: Alignment.centerLeft,
+                                                end: Alignment.centerRight,
+                                              ),
                                             ),
                                           ),
                                         ),
-                                      ),
-                                      // Banner Content
-                                      Padding(
-                                        padding: const EdgeInsets.all(16),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            if (b['tag'] != null)
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                                decoration: BoxDecoration(
-                                                  gradient: const LinearGradient(
-                                                    colors: [Color(0xFF0075FF), Color(0xFF0056C6)],
+                                        // Banner Content
+                                        Padding(
+                                          padding: const EdgeInsets.all(16),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              if (b['tag'] != null && (b['tag'] as String).isNotEmpty)
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                  decoration: BoxDecoration(
+                                                    gradient: const LinearGradient(
+                                                      colors: [Color(0xFF0075FF), Color(0xFF0056C6)],
+                                                    ),
+                                                    borderRadius: BorderRadius.circular(6),
                                                   ),
-                                                  borderRadius: BorderRadius.circular(6),
-                                                ),
-                                                child: Text(
-                                                  b['tag'],
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.w900,
-                                                    letterSpacing: 0.5,
+                                                  child: Text(
+                                                    b['tag'],
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 10,
+                                                      fontWeight: FontWeight.w900,
+                                                      letterSpacing: 0.5,
+                                                    ),
                                                   ),
                                                 ),
+                                              const SizedBox(height: 6),
+                                              Text(
+                                                b['title'] ?? 'Genuine Spares',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w900,
+                                                  letterSpacing: -0.2,
+                                                ),
                                               ),
-                                            const SizedBox(height: 6),
-                                            Text(
-                                              b['title'] ?? 'Genuine Spares',
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w900,
-                                                letterSpacing: -0.2,
+                                              const SizedBox(height: 3),
+                                              Text(
+                                                b['subtitle'] ?? 'Best Price Guaranteed across India',
+                                                style: TextStyle(
+                                                  color: Colors.white.withOpacity(0.85),
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
                                               ),
-                                            ),
-                                            const SizedBox(height: 3),
-                                            Text(
-                                              b['subtitle'] ?? 'Best Price Guaranteed across India',
-                                              style: TextStyle(
-                                                color: Colors.white.withOpacity(0.85),
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
                               );
@@ -566,21 +587,26 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(height: 8),
                         // Dot Indicators
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(
-                            bannersList.length,
-                            (i) => AnimatedContainer(
-                              duration: const Duration(milliseconds: 250),
-                              margin: const EdgeInsets.symmetric(horizontal: 3),
-                              width: _currentBannerIndex == i ? 18 : 6,
-                              height: 6,
-                              decoration: BoxDecoration(
-                                color: _currentBannerIndex == i ? const Color(0xFF0075FF) : const Color(0xFFCBD5E1),
-                                borderRadius: BorderRadius.circular(3),
+                        ValueListenableBuilder<int>(
+                          valueListenable: _currentBannerIndex,
+                          builder: (context, activeIdx, _) {
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(
+                                bannersList.length,
+                                (i) => AnimatedContainer(
+                                  duration: const Duration(milliseconds: 250),
+                                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                                  width: activeIdx == i ? 18 : 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: activeIdx == i ? const Color(0xFF0075FF) : const Color(0xFFCBD5E1),
+                                    borderRadius: BorderRadius.circular(3),
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -630,11 +656,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     StreamBuilder<QuerySnapshot>(
-                      stream: _db.collection('topCategories').where('active', isEqualTo: true).snapshots(),
+                      stream: _categoriesStream,
                       builder: (context, catSnap) {
                         List<Map<String, dynamic>> categoriesList = [];
                         if (catSnap.hasData && catSnap.data!.docs.isNotEmpty) {
                           categoriesList = catSnap.data!.docs.map((d) => d.data() as Map<String, dynamic>).toList();
+                          categoriesList.sort((a, b) => ((a['order'] ?? 0) as num).compareTo((b['order'] ?? 0) as num));
                         }
                         if (categoriesList.isEmpty) {
                           categoriesList = _defaultCategories;
@@ -743,11 +770,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 4),
                     StreamBuilder<QuerySnapshot>(
-                      stream: _db.collection('carBrands').where('active', isEqualTo: true).snapshots(),
+                      stream: _brandsStream,
                       builder: (context, brandSnap) {
                         List<Map<String, dynamic>> brandsList = [];
                         if (brandSnap.hasData && brandSnap.data!.docs.isNotEmpty) {
                           brandsList = brandSnap.data!.docs.map((d) => d.data() as Map<String, dynamic>).toList();
+                          brandsList.sort((a, b) => ((a['order'] ?? 0) as num).compareTo((b['order'] ?? 0) as num));
                         }
                         if (brandsList.isEmpty) {
                           brandsList = _defaultBrands;
@@ -886,7 +914,7 @@ class _HomeScreenState extends State<HomeScreen> {
             StreamBuilder<List<SparePart>>(
               stream: partsProvider.partsStream,
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+                if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
                   return const SliverFillRemaining(
                     child: Center(
                       child: CircularProgressIndicator(color: Color(0xFF0075FF)),
@@ -955,12 +983,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 }
 
+                final screenWidth = MediaQuery.of(context).size.width;
+                final crossAxisCount = screenWidth >= 900 ? 4 : (screenWidth >= 600 ? 3 : 2);
+                final childAspectRatio = screenWidth < 360 ? 0.65 : 0.70;
+
                 return SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
                   sliver: SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.70,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      childAspectRatio: childAspectRatio,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
                     ),

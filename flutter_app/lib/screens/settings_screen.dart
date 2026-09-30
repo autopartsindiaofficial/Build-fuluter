@@ -59,11 +59,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: const [
             Icon(Icons.cleaning_services_rounded, color: Color(0xFF0075FF), size: 22),
             SizedBox(width: 8),
-            Text('Clear App Cache', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
+            Text('Free Up Storage', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
           ],
         ),
         content: const Text(
-          'This will free up local image storage and refresh thumbnail cache without affecting your account data.',
+          'This will remove temporary preview images to save space. Your account, listings, and messages will not be affected.',
           style: TextStyle(fontSize: 13, color: Color(0xFF475569), height: 1.4),
         ),
         actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -77,7 +77,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Navigator.pop(ctx);
               setState(() => _cacheSize = '0 KB');
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Temporary cache cleared successfully!'), backgroundColor: Color(0xFF10B981)),
+                const SnackBar(
+                  content: Text('✨ Storage cleaned successfully!'),
+                  backgroundColor: Color(0xFF10B981),
+                  behavior: SnackBarBehavior.floating,
+                ),
               );
             },
             style: ElevatedButton.styleFrom(
@@ -86,7 +90,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
-            child: const Text('Clear Now', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text('Clean Now', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -178,12 +182,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 20),
 
-          // 2. Storage & Cache Section
+          // 2. Storage Section
           Row(
             children: [
               Container(width: 4, height: 16, decoration: BoxDecoration(color: const Color(0xFF0075FF), borderRadius: BorderRadius.circular(2))),
               const SizedBox(width: 8),
-              const Text('Storage & Offline Cache', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF0F172A))),
+              const Text('Storage & Space', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF0F172A))),
             ],
           ),
           const SizedBox(height: 8),
@@ -200,8 +204,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 decoration: BoxDecoration(color: const Color(0xFF64748B).withOpacity(0.1), shape: BoxShape.circle),
                 child: const Icon(Icons.cleaning_services_rounded, color: Color(0xFF64748B), size: 20),
               ),
-              title: const Text('Clear Image Cache', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-              subtitle: Text('Temporary thumbnail storage: $_cacheSize', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+              title: const Text('Free Up Space', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              subtitle: Text('Temporary image files: $_cacheSize', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
               trailing: ElevatedButton(
                 onPressed: _clearCache,
                 style: ElevatedButton.styleFrom(
@@ -211,7 +215,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                child: const Text('Clear', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                child: const Text('Clean', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
               ),
             ),
           ),
@@ -223,7 +227,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               Container(width: 4, height: 16, decoration: BoxDecoration(color: const Color(0xFF0075FF), borderRadius: BorderRadius.circular(2))),
               const SizedBox(width: 8),
-              const Text('About Platform', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF0F172A))),
+              const Text('About Auto Parts India', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF0F172A))),
             ],
           ),
           const SizedBox(height: 8),
@@ -240,24 +244,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: const [
-                    Text('App Version', style: TextStyle(fontSize: 13, color: Color(0xFF475569), fontWeight: FontWeight.w600)),
-                    Text('v1.0.0 (Production Build)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0F172A))),
+                    Text('Application', style: TextStyle(fontSize: 13, color: Color(0xFF475569), fontWeight: FontWeight.w600)),
+                    Text('Auto Parts India', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0F172A))),
                   ],
                 ),
                 const Divider(height: 20, color: Color(0xFFF1F5F9)),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: const [
-                    Text('Platform Framework', style: TextStyle(fontSize: 13, color: Color(0xFF475569), fontWeight: FontWeight.w600)),
-                    Text('Flutter Automotive Edition', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0075FF))),
+                    Text('Marketplace', style: TextStyle(fontSize: 13, color: Color(0xFF475569), fontWeight: FontWeight.w600)),
+                    Text('All-India Genuine Spares', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0075FF))),
                   ],
                 ),
                 const Divider(height: 20, color: Color(0xFFF1F5F9)),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: const [
-                    Text('Database Engine', style: TextStyle(fontSize: 13, color: Color(0xFF475569), fontWeight: FontWeight.w600)),
-                    Text('Cloud Firestore Real-Time', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF10B981))),
+                    Text('Support', style: TextStyle(fontSize: 13, color: Color(0xFF475569), fontWeight: FontWeight.w600)),
+                    Text('24/7 Verified Community', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF10B981))),
                   ],
                 ),
               ],

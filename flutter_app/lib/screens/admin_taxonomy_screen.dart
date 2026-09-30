@@ -13,6 +13,7 @@ class _AdminTaxonomyScreenState extends State<AdminTaxonomyScreen> with SingleTi
   late TabController _tabController;
 
   final _categoryController = TextEditingController();
+  final _subcategoriesController = TextEditingController();
   final _brandController = TextEditingController();
   final _modelController = TextEditingController();
 
@@ -64,6 +65,7 @@ class _AdminTaxonomyScreenState extends State<AdminTaxonomyScreen> with SingleTi
   void dispose() {
     _tabController.dispose();
     _categoryController.dispose();
+    _subcategoriesController.dispose();
     _brandController.dispose();
     _modelController.dispose();
     super.dispose();
@@ -81,13 +83,29 @@ class _AdminTaxonomyScreenState extends State<AdminTaxonomyScreen> with SingleTi
             Text('Add Part Category', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
           ],
         ),
-        content: TextField(
-          controller: _categoryController,
-          decoration: InputDecoration(
-            hintText: 'e.g. Turbochargers & Intercoolers',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _categoryController,
+              decoration: InputDecoration(
+                labelText: 'Category Name',
+                hintText: 'e.g. Turbochargers & Intercoolers',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _subcategoriesController,
+              decoration: InputDecoration(
+                labelText: 'Sub-Components / Parts',
+                hintText: 'Comma separated: e.g. Turbo, Wastegate, Intercooler',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              ),
+            ),
+          ],
         ),
         actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
@@ -98,14 +116,20 @@ class _AdminTaxonomyScreenState extends State<AdminTaxonomyScreen> with SingleTi
           ElevatedButton(
             onPressed: () async {
               final cat = _categoryController.text.trim();
+              final subcats = _subcategoriesController.text.trim();
               if (cat.isEmpty) return;
               try {
-                await _db.collection('cms_categories').add({
+                await _db.collection('topCategories').add({
                   'name': cat,
+                  'subcategories': subcats,
+                  'active': true,
+                  'order': 0,
                   'createdAt': FieldValue.serverTimestamp(),
+                  'updatedAt': FieldValue.serverTimestamp(),
                 });
                 Navigator.pop(ctx);
                 _categoryController.clear();
+                _subcategoriesController.clear();
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Category added!'), backgroundColor: Color(0xFF10B981)),
@@ -114,7 +138,7 @@ class _AdminTaxonomyScreenState extends State<AdminTaxonomyScreen> with SingleTi
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                    const SnackBar(content: Text('Unable to add category. Please try again.'), backgroundColor: Colors.red),
                   );
                 }
               }
@@ -178,10 +202,13 @@ class _AdminTaxonomyScreenState extends State<AdminTaxonomyScreen> with SingleTi
               final models = _modelController.text.trim();
               if (brand.isEmpty) return;
               try {
-                await _db.collection('cms_brands').add({
-                  'brand': brand,
+                await _db.collection('carBrands').add({
+                  'name': brand,
                   'models': models,
+                  'active': true,
+                  'order': 0,
                   'createdAt': FieldValue.serverTimestamp(),
+                  'updatedAt': FieldValue.serverTimestamp(),
                 });
                 Navigator.pop(ctx);
                 _brandController.clear();
@@ -194,7 +221,7 @@ class _AdminTaxonomyScreenState extends State<AdminTaxonomyScreen> with SingleTi
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                    const SnackBar(content: Text('Unable to add brand. Please try again.'), backgroundColor: Colors.red),
                   );
                 }
               }
@@ -252,7 +279,7 @@ class _AdminTaxonomyScreenState extends State<AdminTaxonomyScreen> with SingleTi
         children: [
           // 1. Categories Tab
           StreamBuilder<QuerySnapshot>(
-            stream: _db.collection('cms_categories').snapshots(),
+            stream: _db.collection('topCategories').snapshots(),
             builder: (context, snapshot) {
               final customCats = snapshot.data?.docs.map((d) => (d.data() as Map<String, dynamic>)['name']?.toString() ?? '').where((n) => n.isNotEmpty).toList() ?? [];
               final allCats = [...customCats, ..._defaultCategories];
@@ -286,7 +313,7 @@ class _AdminTaxonomyScreenState extends State<AdminTaxonomyScreen> with SingleTi
                           : Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(8)),
-                              child: const Text('SYSTEM', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+                              child: const Text('STANDARD', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
                             ),
                     ),
                   );
@@ -297,11 +324,11 @@ class _AdminTaxonomyScreenState extends State<AdminTaxonomyScreen> with SingleTi
 
           // 2. Brands Tab
           StreamBuilder<QuerySnapshot>(
-            stream: _db.collection('cms_brands').snapshots(),
+            stream: _db.collection('carBrands').snapshots(),
             builder: (context, snapshot) {
               final customBrands = snapshot.data?.docs.map((d) {
                 final data = d.data() as Map<String, dynamic>;
-                return {'brand': data['brand'] ?? '', 'models': data['models'] ?? ''};
+                return {'brand': data['name'] ?? data['brand'] ?? '', 'models': data['models'] ?? ''};
               }).toList() ?? [];
 
               final allBrands = [...customBrands, ..._defaultBrands];

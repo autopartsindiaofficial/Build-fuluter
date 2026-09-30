@@ -51,7 +51,7 @@ export const UpdateDialogModal: React.FC<UpdateDialogModalProps> = ({
                 {isForceUpdate ? "Critical Update Required" : "New Version Available"}
               </span>
               <h2 className="text-xl font-black tracking-tight leading-snug text-white">
-                Auto Parts Market v{versionConfig.latestVersion}
+                New Update Available
               </h2>
             </div>
           </div>
@@ -62,13 +62,13 @@ export const UpdateDialogModal: React.FC<UpdateDialogModalProps> = ({
           {/* Version Comparison Card */}
           <div className="grid grid-cols-2 gap-3 p-3.5 bg-slate-50 border border-slate-100 rounded-2xl">
             <div className="space-y-0.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Current Version</span>
-              <span className="text-sm font-extrabold text-slate-700 font-mono block">v{CURRENT_APP_VERSION}</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Installed</span>
+              <span className="text-sm font-extrabold text-slate-700 block">v{CURRENT_APP_VERSION}</span>
             </div>
             <div className="space-y-0.5 border-l border-slate-200 pl-3">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-500 block">Latest Version</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-500 block">Latest</span>
               <div className="flex flex-row items-center gap-1">
-                <span className="text-sm font-extrabold text-indigo-700 font-mono">
+                <span className="text-sm font-extrabold text-indigo-700 block">
                   v{versionConfig.latestVersion}
                 </span>
                 <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />

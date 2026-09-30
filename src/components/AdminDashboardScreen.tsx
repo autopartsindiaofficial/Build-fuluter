@@ -1767,15 +1767,6 @@ export default function AdminDashboardScreen({
                           </label>
                         )}
                       </div>
-                      <div className="mt-1.5">
-                        <input
-                          type="text"
-                          placeholder="Or paste image URL (https://...)"
-                          value={bannerImageUrl.startsWith("data:") ? "" : bannerImageUrl}
-                          onChange={(e) => setBannerImageUrl(e.target.value)}
-                          className="w-full text-xs px-3 py-2 border border-slate-200 rounded-xl focus:border-blue-500 outline-none font-mono"
-                        />
-                      </div>
                     </div>
 
                     {/* Title */}

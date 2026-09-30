@@ -14,6 +14,7 @@ import '../widgets/make_offer_dialog.dart';
 import 'chat_room_screen.dart';
 import 'seller_profile_screen.dart';
 import 'edit_listing_screen.dart';
+import '../services/cloudinary_service.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final SparePart part;
@@ -114,6 +115,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
     if (confirm == true && mounted) {
       try {
+        final imagesToDelete = <String>[...widget.part.images];
+        if (widget.part.imageUrl.isNotEmpty && !imagesToDelete.contains(widget.part.imageUrl)) {
+          imagesToDelete.add(widget.part.imageUrl);
+        }
+        if (imagesToDelete.isNotEmpty) {
+          CloudinaryService.deleteImages(imagesToDelete);
+        }
+
         await _db.collection('spareParts').doc(widget.part.id).delete();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -127,7 +136,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to delete listing: $e')),
+            const SnackBar(content: Text('Unable to delete listing. Please try again.')),
           );
         }
       }
@@ -221,10 +230,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
             onPressed: () {
               partsProvider.toggleWishlist(widget.part.id);
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(isFav ? 'Removed from saved parts' : 'Saved to Wishlist! ⭐'),
-                  duration: const Duration(seconds: 1),
+                  content: Row(
+                    children: [
+                      Icon(isFav ? Icons.favorite_border_rounded : Icons.favorite_rounded, color: Colors.white, size: 20),
+                      const SizedBox(width: 10),
+                      Text(isFav ? 'Removed from Saved Parts' : 'Saved to Wishlist! ⭐', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  backgroundColor: isFav ? const Color(0xFF475569) : const Color(0xFFEF4444),
+                  behavior: SnackBarBehavior.floating,
+                  duration: const Duration(seconds: 2),
                 ),
               );
             },
@@ -232,9 +250,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           IconButton(
             icon: const Icon(Icons.share_outlined, color: Color(0xFF0F172A)),
             onPressed: () {
-              Clipboard.setData(ClipboardData(text: '${widget.part.title} - ${widget.part.price} on Auto Parts India'));
+              Clipboard.setData(ClipboardData(text: '${widget.part.title} - ₹${widget.part.price.toInt()} on Auto Parts India'));
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Listing details copied to clipboard!')),
+                const SnackBar(
+                  content: Row(
+                    children: [
+                      Icon(Icons.copy_rounded, color: Colors.white, size: 20),
+                      SizedBox(width: 10),
+                      Text('Listing link copied to clipboard! 📋', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  backgroundColor: Color(0xFF0F172A),
+                  behavior: SnackBarBehavior.floating,
+                  duration: Duration(seconds: 2),
+                ),
               );
             },
           ),

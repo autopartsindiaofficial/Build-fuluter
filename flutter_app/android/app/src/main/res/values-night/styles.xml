@@ -2,8 +2,12 @@
 <resources>
     <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
         <item name="android:windowBackground">@drawable/launch_background</item>
+        <item name="android:statusBarColor">#0A0F1D</item>
+        <item name="android:navigationBarColor">#0A0F1D</item>
     </style>
     <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
-        <item name="android:windowBackground">?android:colorBackground</item>
+        <item name="android:windowBackground">@drawable/launch_background</item>
+        <item name="android:statusBarColor">#0A0F1D</item>
+        <item name="android:navigationBarColor">#0A0F1D</item>
     </style>
 </resources>

@@ -50,6 +50,14 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
 
   void _onSuccessRedirect() {
     if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('✨ Welcome to Auto Parts India!'),
+        backgroundColor: Color(0xFF10B981),
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 2),
+      ),
+    );
     if (Navigator.canPop(context)) {
       Navigator.pop(context, true);
     } else {
@@ -110,8 +118,21 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
       _onSuccessRedirect();
     } catch (e) {
       if (mounted) {
+        String msg = e.toString().replaceFirst('Exception: ', '').trim();
+        final lower = msg.toLowerCase();
+        if (lower.contains('user-not-found') || lower.contains('wrong-password') || lower.contains('invalid-credential')) {
+          msg = 'Invalid email or password. Please verify and try again.';
+        } else if (lower.contains('email-already-in-use')) {
+          msg = 'An account with this email already exists.';
+        } else if (lower.contains('weak-password')) {
+          msg = 'Password is too short. Please enter at least 6 characters.';
+        } else if (lower.contains('network') || lower.contains('connection')) {
+          msg = 'Unable to connect. Please check your internet connection.';
+        } else if (lower.contains('too-many-requests')) {
+          msg = 'Too many attempts. Please try again in a moment.';
+        }
         setState(() {
-          _errorMessage = e.toString().replaceFirst('Exception: ', '');
+          _errorMessage = msg;
         });
       }
     } finally {
