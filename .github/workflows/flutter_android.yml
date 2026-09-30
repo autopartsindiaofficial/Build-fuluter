@@ -213,7 +213,7 @@ jobs:
             - **app-release.apk**: Universal Android APK (Install directly on any Android device)
             - **app-release.aab**: Google Play Store Bundle
             
-            *Compiled with Android SDK 36, Android Gradle Plugin 8.9.1, Gradle 8.11.1*
+            *Compiled with Android SDK 36, Android Gradle Plugin 8.11.1, Gradle 8.14*
           draft: false
           prerelease: false
           files: |
