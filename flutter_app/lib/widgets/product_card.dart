@@ -12,6 +12,14 @@ class ProductCard extends StatelessWidget {
 
   const ProductCard({Key? key, required this.part}) : super(key: key);
 
+  String _formatDate(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inDays == 0) return 'Today';
+    if (diff.inDays == 1) return 'Yesterday';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    return DateFormat('dd MMM').format(dt);
+  }
+
   @override
   Widget build(BuildContext context) {
     final partsProvider = Provider.of<PartsProvider>(context);
@@ -31,117 +39,117 @@ class ProductCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.04),
               blurRadius: 10,
-              offset: const Offset(0, 4),
+              offset: const Offset(0, 3),
             ),
           ],
         ),
+        clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Image Stack
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-                  child: AspectRatio(
-                    aspectRatio: 1.2,
-                    child: part.imageUrl.isNotEmpty
-                        ? CachedNetworkImage(
-                            imageUrl: part.imageUrl,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(
-                              color: Colors.grey.shade100,
-                              child: const Center(
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              ),
+            Expanded(
+              flex: 5,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  part.imageUrl.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: part.imageUrl,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            color: Colors.grey.shade100,
+                            child: const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
                             ),
-                            errorWidget: (context, url, error) => Container(
-                              color: Colors.grey.shade200,
-                              child: const Icon(Icons.broken_image, color: Colors.grey),
-                            ),
-                          )
-                        : Container(
-                            color: Colors.grey.shade200,
-                            child: const Icon(Icons.directions_car, size: 40, color: Colors.grey),
                           ),
-                  ),
-                ),
-                // Verified Badge
-                if (part.verified)
+                          errorWidget: (context, url, error) => Container(
+                            color: const Color(0xFFF1F5F9),
+                            child: const Icon(Icons.broken_image_rounded, color: Colors.grey, size: 32),
+                          ),
+                        )
+                      : Container(
+                          color: const Color(0xFFF1F5F9),
+                          child: const Icon(Icons.directions_car_filled_rounded, size: 36, color: Color(0xFF94A3B8)),
+                        ),
+
+                  // Condition Badge (Top Left)
                   Positioned(
                     top: 8,
                     left: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                       decoration: BoxDecoration(
-                        color: Colors.black87,
-                        borderRadius: BorderRadius.circular(20),
+                        color: Colors.black.withOpacity(0.75),
+                        borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Icon(Icons.verified, color: Colors.blueAccent, size: 12),
-                          SizedBox(width: 4),
-                          Text(
-                            'Verified',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        part.condition.toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.3,
+                        ),
                       ),
                     ),
                   ),
-                // Wishlist Button
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: GestureDetector(
-                    onTap: () => partsProvider.toggleWishlist(part.id),
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 4,
-                          )
-                        ],
-                      ),
-                      child: Icon(
-                        isFav ? Icons.favorite : Icons.favorite_border,
-                        color: isFav ? AppColors.primary : Colors.grey.shade600,
-                        size: 18,
+
+                  // Wishlist Heart Button (Top Right)
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: GestureDetector(
+                      onTap: () => partsProvider.toggleWishlist(part.id),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.92),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.12),
+                              blurRadius: 4,
+                            )
+                          ],
+                        ),
+                        child: Icon(
+                          isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                          color: isFav ? const Color(0xFFEF4444) : const Color(0xFF64748B),
+                          size: 17,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-            // Info
+
+            // Card Body Info
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Price
                   Text(
                     currencyFormatter.format(part.price),
                     style: const TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF0F172A),
+                      letterSpacing: -0.3,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
+
+                  // Title
                   Text(
                     part.title,
                     maxLines: 1,
@@ -149,33 +157,54 @@ class ProductCard extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: Color(0xFF1E293B),
                     ),
                   ),
                   const SizedBox(height: 2),
+
+                  // Brand & Model
                   Text(
                     '${part.carBrand} • ${part.carModel}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 11,
-                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF64748B),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
+
+                  // Location & Time Footer
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Icon(Icons.location_on, size: 12, color: Colors.grey.shade500),
-                      const SizedBox(width: 2),
                       Expanded(
-                        child: Text(
-                          part.location,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey.shade500,
-                          ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.location_on_outlined, size: 12, color: Color(0xFF94A3B8)),
+                            const SizedBox(width: 2),
+                            Expanded(
+                              child: Text(
+                                part.location,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: Color(0xFF94A3B8),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        _formatDate(part.createdAt),
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Color(0xFF94A3B8),
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],

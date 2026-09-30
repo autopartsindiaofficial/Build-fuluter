@@ -32,12 +32,17 @@ class WishlistScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           'Saved Parts / Wishlist',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+          style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF0F172A), fontSize: 18),
         ),
         backgroundColor: Colors.white,
-        elevation: 0.5,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: const Color(0xFFF1F5F9), height: 1),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF0F172A)),
+          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF0F172A)),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -66,24 +71,24 @@ class WishlistScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      width: 80,
-                      height: 80,
+                      width: 84,
+                      height: 84,
                       decoration: BoxDecoration(
                         color: const Color(0xFFEFF6FF),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.favorite_border, size: 40, color: Color(0xFF0075FF)),
+                      child: const Icon(Icons.favorite_border_rounded, size: 44, color: Color(0xFF0075FF)),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 18),
                     const Text(
                       'Your Wishlist is Empty',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF0F172A)),
+                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Color(0xFF0F172A)),
                     ),
                     const SizedBox(height: 6),
                     const Text(
-                      'Explore automobile spare parts and tap the heart icon to save parts for later reference.',
+                      'Explore automobile spare parts and tap the heart icon on any listing to bookmark it for later reference.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Color(0xFF64748B), fontSize: 13, height: 1.4),
+                      style: TextStyle(color: Color(0xFF64748B), fontSize: 13, height: 1.45),
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton.icon(
@@ -91,9 +96,10 @@ class WishlistScreen extends StatelessWidget {
                         backgroundColor: const Color(0xFF0075FF),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        elevation: 0,
                       ),
-                      icon: const Icon(Icons.search),
+                      icon: const Icon(Icons.search_rounded, size: 18),
                       label: const Text('Explore Spare Parts', style: TextStyle(fontWeight: FontWeight.bold)),
                       onPressed: () {
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen()));
@@ -110,9 +116,19 @@ class WishlistScreen extends StatelessWidget {
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-                child: Text(
-                  '${savedDocs.length} Saved Spare Parts',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF64748B)),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 4,
+                      height: 16,
+                      decoration: BoxDecoration(color: const Color(0xFF0075FF), borderRadius: BorderRadius.circular(2)),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${savedDocs.length} Saved Spare ${savedDocs.length == 1 ? 'Part' : 'Parts'}',
+                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF0F172A)),
+                    ),
+                  ],
                 ),
               ),
               Expanded(

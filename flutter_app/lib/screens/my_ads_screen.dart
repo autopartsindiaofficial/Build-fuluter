@@ -8,6 +8,7 @@ import '../models/spare_part.dart';
 import '../providers/auth_provider.dart';
 import 'product_detail_screen.dart';
 import 'edit_listing_screen.dart';
+import 'sell_part_screen.dart';
 import 'auth_screen.dart';
 
 class MyAdsScreen extends StatefulWidget {
@@ -53,7 +54,7 @@ class _MyAdsScreenState extends State<MyAdsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(currentlySold ? 'Ad marked as ACTIVE ✅' : 'Ad marked as SOLD 🎉'),
-            backgroundColor: const Color(0xFF16A34A),
+            backgroundColor: const Color(0xFF10B981),
           ),
         );
       }
@@ -70,15 +71,33 @@ class _MyAdsScreenState extends State<MyAdsScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Delete Listing', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text('Are you sure you want to permanently delete this ad? This action cannot be undone.'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: const [
+            Icon(Icons.delete_forever_rounded, color: Color(0xFFEF4444), size: 24),
+            SizedBox(width: 8),
+            Text('Delete Listing', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+          ],
+        ),
+        content: const Text(
+          'Are you sure you want to permanently delete this ad? This action cannot be undone.',
+          style: TextStyle(color: Color(0xFF475569), fontSize: 13, height: 1.4),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+          ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              elevation: 0,
+            ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
+            child: const Text('Delete', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -111,31 +130,36 @@ class _MyAdsScreenState extends State<MyAdsScreen> {
       return Scaffold(
         backgroundColor: const Color(0xFFF8FAFC),
         appBar: AppBar(
-          title: const Text('My Listed Ads', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+          title: const Text('My Listed Ads', style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF0F172A), fontSize: 18)),
           backgroundColor: Colors.white,
-          elevation: 0.5,
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: Container(color: const Color(0xFFF1F5F9), height: 1),
+          ),
         ),
         body: Center(
           child: Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.all(28.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(color: const Color(0xFF0075FF).withOpacity(0.1), shape: BoxShape.circle),
+                  padding: const EdgeInsets.all(22),
+                  decoration: BoxDecoration(color: const Color(0xFF0075FF).withOpacity(0.08), shape: BoxShape.circle),
                   child: const Icon(Icons.inventory_2_outlined, size: 54, color: Color(0xFF0075FF)),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 const Text(
                   'Manage Your Listed Ads',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF0F172A)),
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Color(0xFF0F172A)),
                 ),
                 const SizedBox(height: 6),
                 const Text(
                   'Sign in to edit your listings, mark ads as sold, or view customer inquiries.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                  style: TextStyle(color: Color(0xFF64748B), fontSize: 13, height: 1.4),
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
@@ -144,8 +168,9 @@ class _MyAdsScreenState extends State<MyAdsScreen> {
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
                   ),
-                  icon: const Icon(Icons.login),
+                  icon: const Icon(Icons.login_rounded, size: 18),
                   label: const Text('Sign In Now', style: TextStyle(fontWeight: FontWeight.bold)),
                   onPressed: () {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AuthScreen()));
@@ -158,277 +183,342 @@ class _MyAdsScreenState extends State<MyAdsScreen> {
       );
     }
 
-    final currentUid = user.uid;
+    final userId = user.uid;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('My Listed Ads', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+        title: const Text(
+          'My Listed Ads',
+          style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF0F172A), fontSize: 18),
+        ),
         backgroundColor: Colors.white,
-        elevation: 0.5,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline_rounded, color: Color(0xFF0075FF)),
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const SellPartScreen()));
+            },
+          ),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: const Color(0xFFF1F5F9), height: 1),
+        ),
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: _db.collection('spareParts').snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xFF0075FF)));
-          }
-
-          final allDocs = snapshot.data?.docs ?? [];
-
-          // Filter listings belonging to this seller
-          final myDocs = allDocs.where((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            final sId = (data['sellerId'] ?? data['userId'] ?? '').toString();
-            final sEmail = (data['sellerEmail'] ?? '').toString().toLowerCase();
-            return sId == currentUid || (user.email != null && sEmail == user.email!.toLowerCase());
-          }).toList();
-
-          final activeCount = myDocs.where((d) => (d.data() as Map<String, dynamic>)['status'] != 'sold' && (d.data() as Map<String, dynamic>)['isSold'] != true).length;
-          final soldCount = myDocs.where((d) => (d.data() as Map<String, dynamic>)['status'] == 'sold' || (d.data() as Map<String, dynamic>)['isSold'] == true).length;
-
-          // Apply Tab Filter
-          var filteredDocs = myDocs.where((d) {
-            final data = d.data() as Map<String, dynamic>;
-            final isSold = data['status'] == 'sold' || data['isSold'] == true;
-            if (_activeTab == 'active') return !isSold;
-            if (_activeTab == 'sold') return isSold;
-            return true;
-          }).toList();
-
-          // Apply Search Filter
-          if (_searchQuery.isNotEmpty) {
-            filteredDocs = filteredDocs.where((d) {
-              final data = d.data() as Map<String, dynamic>;
-              final title = (data['title'] ?? '').toString().toLowerCase();
-              final brand = (data['carBrand'] ?? '').toString().toLowerCase();
-              return title.contains(_searchQuery) || brand.contains(_searchQuery);
-            }).toList();
-          }
-
-          return Column(
-            children: [
-              // 1. Tab Selector Bar
-              Container(
-                color: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
+      body: Column(
+        children: [
+          // Segmented Tabs & Search Container
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            child: Column(
+              children: [
+                // Segmented Tabs
+                Row(
                   children: [
-                    _buildTabChip('active', 'Active ($activeCount)'),
+                    _buildTabPill('active', 'Active'),
                     const SizedBox(width: 8),
-                    _buildTabChip('sold', 'Sold ($soldCount)'),
+                    _buildTabPill('sold', 'Sold Out 🎉'),
                     const SizedBox(width: 8),
-                    _buildTabChip('all', 'All (${myDocs.length})'),
+                    _buildTabPill('all', 'All Ads'),
                   ],
                 ),
-              ),
+                const SizedBox(height: 10),
 
-              // 2. Search Bar
-              if (myDocs.isNotEmpty)
+                // Quick Search Box
                 Container(
-                  color: Colors.white,
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: TextField(
                     controller: _searchCtrl,
                     onChanged: (val) => setState(() => _searchQuery = val.trim().toLowerCase()),
                     decoration: InputDecoration(
-                      hintText: 'Search my ads by title or brand...',
-                      hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
-                      prefixIcon: const Icon(Icons.search, size: 20, color: Color(0xFF64748B)),
-                      filled: true,
-                      fillColor: const Color(0xFFF1F5F9),
+                      hintText: 'Search my ads by title or car model...',
+                      hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                      prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Color(0xFF64748B)),
+                      suffixIcon: _searchCtrl.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.cancel_rounded, size: 16, color: Color(0xFF94A3B8)),
+                              onPressed: () {
+                                _searchCtrl.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                            )
+                          : null,
+                      border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                     ),
                   ),
                 ),
+              ],
+            ),
+          ),
 
-              // 3. Listings List
-              Expanded(
-                child: filteredDocs.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle),
-                              child: const Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              _activeTab == 'sold' ? 'No sold ads yet' : "You haven't listed any active spare parts.",
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A)),
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Post your spare part ads to reach buyers across India.',
-                              style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(14),
-                        itemCount: filteredDocs.length,
-                        itemBuilder: (context, index) {
-                          final doc = filteredDocs[index];
-                          final part = SparePart.fromFirestore(doc);
-                          final data = doc.data() as Map<String, dynamic>;
-                          final isSold = data['status'] == 'sold' || data['isSold'] == true;
-                          final views = data['views'] ?? 0;
+          // Real-time Ads Stream
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: _db.collection('spareParts').where('sellerId', isEqualTo: userId).snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator(color: Color(0xFF0075FF)));
+                }
 
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: const Color(0xFFE2E8F0)),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.02),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
+                var docs = snapshot.data?.docs ?? [];
+
+                // Filter by Tab
+                if (_activeTab == 'active') {
+                  docs = docs.where((d) {
+                    final data = d.data() as Map<String, dynamic>;
+                    final isSold = data['status'] == 'sold' || data['isSold'] == true || data['sold'] == true;
+                    return !isSold;
+                  }).toList();
+                } else if (_activeTab == 'sold') {
+                  docs = docs.where((d) {
+                    final data = d.data() as Map<String, dynamic>;
+                    final isSold = data['status'] == 'sold' || data['isSold'] == true || data['sold'] == true;
+                    return isSold;
+                  }).toList();
+                }
+
+                // Filter by Search
+                if (_searchQuery.isNotEmpty) {
+                  docs = docs.where((d) {
+                    final data = d.data() as Map<String, dynamic>;
+                    final t = (data['title'] ?? '').toString().toLowerCase();
+                    final b = (data['carBrand'] ?? '').toString().toLowerCase();
+                    final m = (data['carModel'] ?? '').toString().toLowerCase();
+                    return t.contains(_searchQuery) || b.contains(_searchQuery) || m.contains(_searchQuery);
+                  }).toList();
+                }
+
+                if (docs.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(28.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(color: const Color(0xFFF1F5F9), shape: BoxShape.circle),
+                            child: const Icon(Icons.inventory_2_outlined, size: 50, color: Color(0xFF94A3B8)),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            _activeTab == 'sold' ? 'No Sold Parts Yet' : 'No Listed Ads Found',
+                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17, color: Color(0xFF0F172A)),
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            'Post your unused or spare auto parts today to reach thousands of car owners across India.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Color(0xFF64748B), fontSize: 13, height: 1.4),
+                          ),
+                          const SizedBox(height: 20),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF0075FF),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              elevation: 0,
                             ),
-                            child: Column(
-                              children: [
-                                // Top info row
-                                InkWell(
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(builder: (_) => ProductDetailScreen(part: part)),
-                                    );
-                                  },
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(12),
-                                    child: Row(
+                            icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
+                            label: const Text('Post New Spare Part', style: TextStyle(fontWeight: FontWeight.bold)),
+                            onPressed: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const SellPartScreen()));
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: docs.length,
+                  itemBuilder: (context, index) {
+                    final doc = docs[index];
+                    final part = SparePart.fromFirestore(doc);
+                    final data = doc.data() as Map<String, dynamic>;
+                    final isSold = data['status'] == 'sold' || data['isSold'] == true || data['sold'] == true;
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.02),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          // Top Part Info Row
+                          InkWell(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => ProductDetailScreen(part: part)),
+                              );
+                            },
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Part Thumbnail
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: CachedNetworkImage(
+                                      imageUrl: part.imageUrl,
+                                      width: 76,
+                                      height: 76,
+                                      fit: BoxFit.cover,
+                                      errorWidget: (_, __, ___) => Container(width: 76, height: 76, color: const Color(0xFFF1F5F9)),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        // Thumbnail
-                                        ClipRRect(
-                                          borderRadius: BorderRadius.circular(10),
-                                          child: CachedNetworkImage(
-                                            imageUrl: part.imageUrl,
-                                            width: 80,
-                                            height: 80,
-                                            fit: BoxFit.cover,
-                                            placeholder: (_, __) => Container(color: Colors.grey.shade100),
-                                            errorWidget: (_, __, ___) => Container(width: 80, height: 80, color: Colors.grey.shade200, child: const Icon(Icons.car_repair, color: Colors.grey)),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        // Title, Price, Views
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
-                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                children: [
-                                                  Container(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                                                    decoration: BoxDecoration(
-                                                      color: isSold ? Colors.grey.shade200 : const Color(0xFFDCFCE7),
-                                                      borderRadius: BorderRadius.circular(6),
-                                                    ),
-                                                    child: Text(
-                                                      isSold ? 'SOLD' : 'ACTIVE',
-                                                      style: TextStyle(
-                                                        fontSize: 10,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: isSold ? Colors.grey.shade700 : const Color(0xFF16A34A),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  Row(
-                                                    children: [
-                                                      const Icon(Icons.visibility_outlined, size: 14, color: Color(0xFF64748B)),
-                                                      const SizedBox(width: 4),
-                                                      Text('$views views', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-                                                    ],
-                                                  ),
-                                                ],
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              _currencyFormatter.format(part.price),
+                                              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF0F172A)),
+                                            ),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                              decoration: BoxDecoration(
+                                                color: isSold ? const Color(0xFFFEF3C7) : const Color(0xFFDCFCE7),
+                                                borderRadius: BorderRadius.circular(8),
                                               ),
-                                              const SizedBox(height: 6),
-                                              Text(
-                                                part.title,
-                                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A)),
-                                                maxLines: 2,
+                                              child: Text(
+                                                isSold ? 'SOLD' : 'ACTIVE',
+                                                style: TextStyle(
+                                                  color: isSold ? const Color(0xFFD97706) : const Color(0xFF16A34A),
+                                                  fontWeight: FontWeight.w900,
+                                                  fontSize: 10,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          part.title,
+                                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF334155)),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.remove_red_eye_rounded, size: 13, color: Color(0xFF64748B)),
+                                            const SizedBox(width: 4),
+                                            Text('${part.views} views', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                                            const SizedBox(width: 12),
+                                            const Icon(Icons.location_on_rounded, size: 13, color: Color(0xFF64748B)),
+                                            const SizedBox(width: 4),
+                                            Expanded(
+                                              child: Text(
+                                                part.location,
+                                                style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                                maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                               ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                _currencyFormatter.format(part.price),
-                                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: Color(0xFF0075FF)),
-                                              ),
-                                            ],
-                                          ),
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
                                   ),
-                                ),
+                                ],
+                              ),
+                            ),
+                          ),
 
-                                const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                          const Divider(height: 1, color: Color(0xFFF1F5F9)),
 
-                                // Action Buttons Row
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                    children: [
-                                      // Edit Button
-                                      TextButton.icon(
-                                        icon: const Icon(Icons.edit_outlined, size: 16, color: Color(0xFF0075FF)),
-                                        label: const Text('Edit', style: TextStyle(color: Color(0xFF0075FF), fontSize: 12, fontWeight: FontWeight.bold)),
-                                        onPressed: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(builder: (_) => EditListingScreen(part: part)),
-                                          );
-                                        },
-                                      ),
-
-                                      // Mark as Sold / Active
-                                      TextButton.icon(
-                                        icon: Icon(isSold ? Icons.check_circle_outline : Icons.sell_outlined, size: 16, color: const Color(0xFF16A34A)),
-                                        label: Text(
-                                          isSold ? 'Activate' : 'Mark Sold',
-                                          style: const TextStyle(color: Color(0xFF16A34A), fontSize: 12, fontWeight: FontWeight.bold),
-                                        ),
-                                        onPressed: () => _toggleSoldStatus(part.id, isSold),
-                                      ),
-
-                                      // Delete Button
-                                      TextButton.icon(
-                                        icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
-                                        label: const Text('Delete', style: TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold)),
-                                        onPressed: () => _deleteListing(part.id),
-                                      ),
-                                    ],
+                          // Action Toolbar (Sold Toggle, Edit, Delete)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            child: Row(
+                              children: [
+                                // Toggle Sold / Active Button
+                                OutlinedButton.icon(
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    side: BorderSide(color: isSold ? const Color(0xFF10B981) : const Color(0xFFF59E0B)),
+                                    foregroundColor: isSold ? const Color(0xFF10B981) : const Color(0xFFD97706),
+                                    visualDensity: VisualDensity.compact,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                   ),
+                                  icon: Icon(isSold ? Icons.check_circle_outline_rounded : Icons.monetization_on_outlined, size: 15),
+                                  label: Text(isSold ? 'Mark Active' : 'Mark Sold', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                                  onPressed: () => _toggleSoldStatus(part.id, isSold),
+                                ),
+                                const Spacer(),
+
+                                // Edit Button
+                                TextButton.icon(
+                                  style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                                  icon: const Icon(Icons.edit_outlined, size: 15, color: Color(0xFF0075FF)),
+                                  label: const Text('Edit', style: TextStyle(color: Color(0xFF0075FF), fontWeight: FontWeight.bold, fontSize: 12)),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => EditListingScreen(part: part)),
+                                    );
+                                  },
+                                ),
+                                const SizedBox(width: 4),
+
+                                // Delete Button
+                                TextButton.icon(
+                                  style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                                  icon: const Icon(Icons.delete_outline_rounded, size: 15, color: Color(0xFFEF4444)),
+                                  label: const Text('Delete', style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.bold, fontSize: 12)),
+                                  onPressed: () => _deleteListing(part.id),
                                 ),
                               ],
                             ),
-                          );
-                        },
+                          ),
+                        ],
                       ),
-              ),
-            ],
-          );
-        },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildTabChip(String key, String label) {
+  Widget _buildTabPill(String key, String label) {
     final isSelected = _activeTab == key;
     return GestureDetector(
       onTap: () => setState(() => _activeTab = key),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFF0075FF) : const Color(0xFFF1F5F9),
@@ -438,7 +528,7 @@ class _MyAdsScreenState extends State<MyAdsScreen> {
           label,
           style: TextStyle(
             fontSize: 12,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
             color: isSelected ? Colors.white : const Color(0xFF475569),
           ),
         ),

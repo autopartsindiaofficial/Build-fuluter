@@ -43,7 +43,7 @@ class _SellPartScreenState extends State<SellPartScreen> {
     }
   }
 
-  // Brand to Model Cascading Map matching React Native
+  // Brand to Model Cascading Map
   final Map<String, List<String>> _brandModels = {
     'Maruti Suzuki': ['Swift', 'Baleno', 'Brezza', 'Dzire', 'Ertiga', 'Wagon R', 'Alto', 'Grand Vitara', 'Ciaz', 'Fronx', 'Jimny', 'XL6', 'Ignis', 'Celerio', 'Ritz'],
     'Hyundai': ['Creta', 'i20', 'Venue', 'Verna', 'Grand i10', 'Aura', 'Tucson', 'Exter', 'Alcazar', 'Santro', 'Eon'],
@@ -57,7 +57,7 @@ class _SellPartScreenState extends State<SellPartScreen> {
     'Ford': ['EcoSport', 'Endeavour', 'Figo', 'Aspire', 'Freestyle'],
   };
 
-  // Categories & Sub-parts matching React Native MASTER_CATEGORY_PARTS
+  // Categories & Sub-parts
   final Map<String, List<String>> _categories = {
     'Engine & Mechanical': ['Turbocharger', 'Cylinder Head', 'Pistons & Rings', 'Timing Belt & Chain', 'Engine Oil Pump', 'Fuel Injector', 'Alternator', 'Starter Motor'],
     'Body & Exterior': ['Front Bumper', 'Rear Bumper', 'Headlight Assembly', 'Tail Light Assembly', 'Side Mirrors (ORVM)', 'Bonnet / Hood', 'Front Fender', 'Car Doors'],
@@ -141,26 +141,42 @@ class _SellPartScreenState extends State<SellPartScreen> {
   void _showImagePickerSheet() {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Add Part Photos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              Row(
+                children: const [
+                  Icon(Icons.add_photo_alternate_rounded, color: Color(0xFF0075FF), size: 24),
+                  SizedBox(width: 8),
+                  Text('Add Part Photos', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+                ],
+              ),
               const SizedBox(height: 16),
               ListTile(
-                leading: const Icon(Icons.camera_alt, color: Color(0xFF0075FF)),
-                title: const Text('Take Photo with Camera'),
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(color: const Color(0xFF0075FF).withOpacity(0.1), shape: BoxShape.circle),
+                  child: const Icon(Icons.camera_alt_rounded, color: Color(0xFF0075FF)),
+                ),
+                title: const Text('Take Photo with Camera', style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text('Snap clear photo of OEM label & connectors', style: TextStyle(fontSize: 12)),
                 onTap: () {
                   Navigator.pop(ctx);
                   _pickImage(ImageSource.camera);
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library, color: Color(0xFF0075FF)),
-                title: const Text('Choose from Photo Gallery'),
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(color: const Color(0xFF10B981).withOpacity(0.1), shape: BoxShape.circle),
+                  child: const Icon(Icons.photo_library_rounded, color: Color(0xFF10B981)),
+                ),
+                title: const Text('Choose from Photo Gallery', style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text('Select multiple photos from device', style: TextStyle(fontSize: 12)),
                 onTap: () {
                   Navigator.pop(ctx);
                   _pickImage(ImageSource.gallery);
@@ -194,7 +210,10 @@ class _SellPartScreenState extends State<SellPartScreen> {
 
     if (_selectedFiles.isEmpty && _imageUrls.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please upload or attach at least 1 photo of the spare part.')),
+        const SnackBar(
+          content: Text('Please upload or attach at least 1 photo of the spare part.'),
+          backgroundColor: Color(0xFFEF4444),
+        ),
       );
       return;
     }
@@ -253,7 +272,7 @@ class _SellPartScreenState extends State<SellPartScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('🎉 Your auto spare part is now LIVE on the marketplace!'),
-            backgroundColor: Color(0xFF16A34A),
+            backgroundColor: Color(0xFF10B981),
           ),
         );
         Navigator.pop(context);
@@ -276,14 +295,19 @@ class _SellPartScreenState extends State<SellPartScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        elevation: 0.5,
+        elevation: 0,
         backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
         title: Text(
           lang.t('postAd'),
-          style: const TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.bold, fontSize: 18),
+          style: const TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.w900, fontSize: 18),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: const Color(0xFFF1F5F9), height: 1),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Color(0xFF0F172A)),
+          icon: const Icon(Icons.close_rounded, color: Color(0xFF0F172A)),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -295,14 +319,14 @@ class _SellPartScreenState extends State<SellPartScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 1. Photo Section
-              _buildSectionHeader('Part Photos *', 'Add clear photos showing part labels & condition'),
-              const SizedBox(height: 8),
+              _buildSectionHeader('Part Photos *', 'Add photos showing OEM tags, connectors & condition'),
+              const SizedBox(height: 10),
               SizedBox(
-                height: 105,
+                height: 110,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: [
-                    // Add Photo Button
+                    // Add Photo Trigger Card
                     GestureDetector(
                       onTap: _showImagePickerSheet,
                       child: Container(
@@ -311,15 +335,15 @@ class _SellPartScreenState extends State<SellPartScreen> {
                         margin: const EdgeInsets.only(right: 12),
                         decoration: BoxDecoration(
                           color: const Color(0xFFEFF6FF),
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: const Color(0xFFBFDBFE), width: 1.5),
                         ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: const [
-                            Icon(Icons.add_a_photo_outlined, color: Color(0xFF0075FF), size: 28),
-                            SizedBox(height: 4),
-                            Text('Add Photo', style: TextStyle(color: Color(0xFF0075FF), fontSize: 11, fontWeight: FontWeight.bold)),
+                            Icon(Icons.add_a_photo_rounded, color: Color(0xFF0075FF), size: 28),
+                            SizedBox(height: 6),
+                            Text('Add Photo', style: TextStyle(color: Color(0xFF0075FF), fontSize: 11, fontWeight: FontWeight.w800)),
                           ],
                         ),
                       ),
@@ -333,7 +357,7 @@ class _SellPartScreenState extends State<SellPartScreen> {
                               height: 105,
                               margin: const EdgeInsets.only(right: 10),
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(16),
                                 border: Border.all(color: const Color(0xFFE2E8F0)),
                               ),
                               clipBehavior: Clip.antiAlias,
@@ -345,9 +369,9 @@ class _SellPartScreenState extends State<SellPartScreen> {
                               child: GestureDetector(
                                 onTap: () => setState(() => _selectedFiles.remove(f)),
                                 child: Container(
-                                  padding: const EdgeInsets.all(3),
-                                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                                  child: const Icon(Icons.close, color: Colors.white, size: 14),
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(color: Color(0xFFEF4444), shape: BoxShape.circle),
+                                  child: const Icon(Icons.close_rounded, color: Colors.white, size: 12),
                                 ),
                               ),
                             ),
@@ -362,7 +386,7 @@ class _SellPartScreenState extends State<SellPartScreen> {
                               height: 105,
                               margin: const EdgeInsets.only(right: 10),
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(16),
                                 border: Border.all(color: const Color(0xFFE2E8F0)),
                               ),
                               clipBehavior: Clip.antiAlias,
@@ -374,9 +398,9 @@ class _SellPartScreenState extends State<SellPartScreen> {
                               child: GestureDetector(
                                 onTap: () => setState(() => _imageUrls.remove(url)),
                                 child: Container(
-                                  padding: const EdgeInsets.all(3),
-                                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                                  child: const Icon(Icons.close, color: Colors.white, size: 14),
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(color: Color(0xFFEF4444), shape: BoxShape.circle),
+                                  child: const Icon(Icons.close_rounded, color: Colors.white, size: 12),
                                 ),
                               ),
                             ),
@@ -386,16 +410,51 @@ class _SellPartScreenState extends State<SellPartScreen> {
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
+              // Web URL fallback field
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 40,
+                      child: TextField(
+                        controller: _directUrlCtrl,
+                        decoration: InputDecoration(
+                          hintText: 'Or paste image URL (https://...)',
+                          hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0075FF),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    ),
+                    onPressed: _addDirectUrl,
+                    child: const Text('Add', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
 
               // 2. Vehicle Compatibility
-              _buildSectionHeader('Vehicle Compatibility', 'Select the car model this part fits'),
-              const SizedBox(height: 10),
+              _buildSectionHeader('Vehicle Compatibility', 'Select the exact automobile model this part belongs to'),
+              const SizedBox(height: 12),
 
               // Car Brand Dropdown
               DropdownButtonFormField<String>(
                 value: _selectedBrand,
-                decoration: _inputDecoration('Car Brand *', Icons.directions_car),
+                decoration: _inputDecoration('Car Brand *', Icons.directions_car_rounded),
                 items: _brandModels.keys.map((b) => DropdownMenuItem(value: b, child: Text(b))).toList(),
                 onChanged: (val) {
                   if (val != null) {
@@ -407,12 +466,12 @@ class _SellPartScreenState extends State<SellPartScreen> {
                   }
                 },
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
 
               // Car Model Dropdown (Cascading)
               DropdownButtonFormField<String>(
                 value: _selectedModel,
-                decoration: _inputDecoration('Car Model *', Icons.car_repair),
+                decoration: _inputDecoration('Car Model *', Icons.car_repair_rounded),
                 items: _brandModels[_selectedBrand]!.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
                 onChanged: (val) {
                   if (val != null) {
@@ -423,7 +482,7 @@ class _SellPartScreenState extends State<SellPartScreen> {
                   }
                 },
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
 
               // Fuel Type & Year Row
               Row(
@@ -431,18 +490,18 @@ class _SellPartScreenState extends State<SellPartScreen> {
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       value: _selectedFuelType,
-                      decoration: _inputDecoration('Fuel Type', Icons.local_gas_station),
+                      decoration: _inputDecoration('Fuel Type', Icons.local_gas_station_rounded),
                       items: _fuelTypes.map((f) => DropdownMenuItem(value: f, child: Text(f))).toList(),
                       onChanged: (val) {
                         if (val != null) setState(() => _selectedFuelType = val);
                       },
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       value: _selectedYear,
-                      decoration: _inputDecoration('Year', Icons.calendar_today),
+                      decoration: _inputDecoration('Year', Icons.calendar_today_rounded),
                       items: _years.map((y) => DropdownMenuItem(value: y, child: Text(y))).toList(),
                       onChanged: (val) {
                         if (val != null) {
@@ -457,16 +516,15 @@ class _SellPartScreenState extends State<SellPartScreen> {
                 ],
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
-              // 3. Category & Part Type
-              _buildSectionHeader('Part Classification', 'Choose category and specific spare component'),
-              const SizedBox(height: 10),
+              // 3. Category & Part Identification
+              _buildSectionHeader('Part Category & Taxonomy', 'Categorize this spare part accurately'),
+              const SizedBox(height: 12),
 
-              // Category Dropdown
               DropdownButtonFormField<String>(
                 value: _selectedCategory,
-                decoration: _inputDecoration('Category *', Icons.category),
+                decoration: _inputDecoration('Category *', Icons.category_rounded),
                 items: _categories.keys.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
                 onChanged: (val) {
                   if (val != null) {
@@ -478,12 +536,11 @@ class _SellPartScreenState extends State<SellPartScreen> {
                   }
                 },
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
 
-              // Subcategory Dropdown (Cascading)
               DropdownButtonFormField<String>(
                 value: _selectedSubcategory,
-                decoration: _inputDecoration('Component / Subcategory *', Icons.subdirectory_arrow_right),
+                decoration: _inputDecoration('Sub-Component *', Icons.subdirectory_arrow_right_rounded),
                 items: _categories[_selectedCategory]!.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                 onChanged: (val) {
                   if (val != null) {
@@ -494,100 +551,100 @@ class _SellPartScreenState extends State<SellPartScreen> {
                   }
                 },
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
 
-              // Part Condition Chips
-              const Text('Part Condition *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF475569))),
-              const SizedBox(height: 6),
-              Wrap(
-                spacing: 8,
-                children: _conditions.map((cond) {
-                  final isSelected = _selectedCondition == cond;
-                  return ChoiceChip(
-                    label: Text(cond),
-                    selected: isSelected,
-                    selectedColor: const Color(0xFF0075FF),
-                    labelStyle: TextStyle(
-                      fontSize: 12,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      color: isSelected ? Colors.white : const Color(0xFF334155),
-                    ),
-                    backgroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Color(0xFFE2E8F0))),
-                    onSelected: (val) {
-                      if (val) setState(() => _selectedCondition = cond);
-                    },
-                  );
-                }).toList(),
+              // OEM Part Number Field
+              TextFormField(
+                controller: _oemCtrl,
+                decoration: _inputDecoration('OEM / Part Number (Recommended)', Icons.tag_rounded).copyWith(
+                  hintText: 'e.g. 71711M68K00-799',
+                ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
               // 4. Listing Details & Pricing
-              _buildSectionHeader('Pricing & Details', 'Set an attractive market price'),
-              const SizedBox(height: 10),
-
-              // Title (Auto-generated & Editable)
-              TextFormField(
-                controller: _titleCtrl,
-                decoration: _inputDecoration('Ad Title *', Icons.title),
-                validator: (val) => val == null || val.trim().isEmpty ? 'Please enter ad title' : null,
-              ),
+              _buildSectionHeader('Pricing & Condition', 'Set your desired price and terms'),
               const SizedBox(height: 12),
 
-              // Price & Negotiable Switch
+              TextFormField(
+                controller: _titleCtrl,
+                decoration: _inputDecoration('Listing Title *', Icons.title_rounded),
+                validator: (val) => (val == null || val.trim().isEmpty) ? 'Please enter a title' : null,
+              ),
+              const SizedBox(height: 14),
+
+              DropdownButtonFormField<String>(
+                value: _selectedCondition,
+                decoration: _inputDecoration('Condition *', Icons.verified_rounded),
+                items: _conditions.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                onChanged: (val) {
+                  if (val != null) setState(() => _selectedCondition = val);
+                },
+              ),
+              const SizedBox(height: 14),
+
+              // Price Row with Negotiable Switch
               Row(
                 children: [
                   Expanded(
-                    flex: 3,
                     child: TextFormField(
                       controller: _priceCtrl,
                       keyboardType: TextInputType.number,
-                      decoration: _inputDecoration('Price (₹) *', Icons.currency_rupee),
-                      validator: (val) => val == null || val.trim().isEmpty ? 'Enter price' : null,
+                      decoration: _inputDecoration('Price (₹) *', Icons.currency_rupee_rounded).copyWith(
+                        hintText: 'e.g. 3500',
+                      ),
+                      validator: (val) {
+                        if (val == null || val.trim().isEmpty) return 'Enter price';
+                        if (double.tryParse(val.replaceAll(',', '').trim()) == null) return 'Invalid number';
+                        return null;
+                      },
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
                     child: Row(
                       children: [
-                        Checkbox(
+                        const Text('Negotiable', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                        Switch(
                           value: _isNegotiable,
                           activeColor: const Color(0xFF0075FF),
-                          onChanged: (val) => setState(() => _isNegotiable = val ?? true),
-                        ),
-                        const Flexible(
-                          child: Text('Negotiable', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                          onChanged: (val) => setState(() => _isNegotiable = val),
                         ),
                       ],
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-
-              // OEM Part Number (Optional)
-              TextFormField(
-                controller: _oemCtrl,
-                decoration: _inputDecoration('OEM Part # (Optional)', Icons.tag),
-              ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
 
               // Description
               TextFormField(
                 controller: _descCtrl,
-                maxLines: 3,
-                decoration: _inputDecoration('Detailed Description', Icons.description),
+                maxLines: 4,
+                decoration: InputDecoration(
+                  labelText: 'Description (Optional)',
+                  hintText: 'Describe condition, mileage used, warranty, reason for selling...',
+                  hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
-              // 5. Location & Contact
-              _buildSectionHeader('Location & Contact', 'Buyers in this area will see your listing'),
-              const SizedBox(height: 10),
+              // 5. Seller Location & Contact
+              _buildSectionHeader('Seller Location & Contact', 'Buyers will call or chat with you here'),
+              const SizedBox(height: 12),
 
-              // Location Picker Field
               InkWell(
                 onTap: () async {
                   final result = await Navigator.push(
@@ -601,17 +658,20 @@ class _SellPartScreenState extends State<SellPartScreen> {
                 child: IgnorePointer(
                   child: TextFormField(
                     controller: _locationCtrl,
-                    decoration: _inputDecoration('Location (City, State) *', Icons.location_on),
+                    decoration: _inputDecoration('Location / District *', Icons.location_on_rounded).copyWith(
+                      suffixIcon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF64748B)),
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
 
-              // Seller Phone Number
               TextFormField(
                 controller: _phoneCtrl,
                 keyboardType: TextInputType.phone,
-                decoration: _inputDecoration('Mobile Phone (For direct calls)', Icons.phone),
+                decoration: _inputDecoration('Contact Phone (Optional)', Icons.call_rounded).copyWith(
+                  hintText: 'Buyers can direct call you if provided',
+                ),
               ),
 
               const SizedBox(height: 32),
@@ -624,26 +684,30 @@ class _SellPartScreenState extends State<SellPartScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0075FF),
                     foregroundColor: Colors.white,
-                    elevation: 3,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
                   ),
                   onPressed: _isSubmitting ? null : _submitAd,
                   child: _isSubmitting
                       ? Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: const [
-                            SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5)),
+                            SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
                             SizedBox(width: 12),
-                            Text('Publishing Your Ad...', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            Text('Publishing Spare Part...', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                           ],
                         )
-                      : const Text(
-                          '🚀 Post Spare Part Ad Now',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.3),
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.cloud_upload_rounded, size: 20),
+                            SizedBox(width: 8),
+                            Text('POST AUTO SPARE PART NOW', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, letterSpacing: 0.5)),
+                          ],
                         ),
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -655,8 +719,18 @@ class _SellPartScreenState extends State<SellPartScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A))),
-        const SizedBox(height: 2),
+        Row(
+          children: [
+            Container(
+              width: 4,
+              height: 16,
+              decoration: BoxDecoration(color: const Color(0xFF0075FF), borderRadius: BorderRadius.circular(2)),
+            ),
+            const SizedBox(width: 8),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: Color(0xFF0F172A))),
+          ],
+        ),
+        const SizedBox(height: 3),
         Text(subtitle, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
       ],
     );
@@ -665,23 +739,14 @@ class _SellPartScreenState extends State<SellPartScreen> {
   InputDecoration _inputDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+      labelStyle: const TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
       prefixIcon: Icon(icon, color: const Color(0xFF0075FF), size: 20),
       filled: true,
       fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF0075FF), width: 1.5),
-      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF0075FF), width: 1.5)),
     );
   }
 }

@@ -42,30 +42,39 @@ class ProfileScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Select Language / மொழி'),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: const [
+            Icon(Icons.language_rounded, color: Color(0xFF0075FF), size: 22),
+            SizedBox(width: 8),
+            Text('Language / மொழி', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
+          ],
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              title: const Text('English'),
-              trailing: lang.currentLanguage == 'en' ? const Icon(Icons.check, color: Color(0xFF0075FF)) : null,
+              title: const Text('English (Default)', style: TextStyle(fontWeight: FontWeight.w700)),
+              trailing: lang.currentLanguage == 'en' ? const Icon(Icons.check_circle_rounded, color: Color(0xFF0075FF)) : null,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               onTap: () {
                 lang.setLanguage('en');
                 Navigator.pop(ctx);
               },
             ),
             ListTile(
-              title: const Text('தமிழ் (Tamil)'),
-              trailing: lang.currentLanguage == 'ta' ? const Icon(Icons.check, color: Color(0xFF0075FF)) : null,
+              title: const Text('தமிழ் (Tamil)', style: TextStyle(fontWeight: FontWeight.w700)),
+              trailing: lang.currentLanguage == 'ta' ? const Icon(Icons.check_circle_rounded, color: Color(0xFF0075FF)) : null,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               onTap: () {
                 lang.setLanguage('ta');
                 Navigator.pop(ctx);
               },
             ),
             ListTile(
-              title: const Text('हिन्दी (Hindi)'),
-              trailing: lang.currentLanguage == 'hi' ? const Icon(Icons.check, color: Color(0xFF0075FF)) : null,
+              title: const Text('हिन्दी (Hindi)', style: TextStyle(fontWeight: FontWeight.w700)),
+              trailing: lang.currentLanguage == 'hi' ? const Icon(Icons.check_circle_rounded, color: Color(0xFF0075FF)) : null,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               onTap: () {
                 lang.setLanguage('hi');
                 Navigator.pop(ctx);
@@ -81,18 +90,36 @@ class ProfileScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Sign Out', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text('Are you sure you want to log out from Auto Parts India?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: const [
+            Icon(Icons.logout_rounded, color: Color(0xFFEF4444), size: 24),
+            SizedBox(width: 8),
+            Text('Sign Out', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+          ],
+        ),
+        content: const Text(
+          'Are you sure you want to log out from Auto Parts India?',
+          style: TextStyle(color: Color(0xFF475569), fontSize: 14),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+          ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              elevation: 0,
+            ),
             onPressed: () async {
               Navigator.pop(ctx);
               await auth.signOut();
             },
-            child: const Text('Sign Out'),
+            child: const Text('Sign Out', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -113,15 +140,29 @@ class ProfileScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           lang.t('profile'),
-          style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+          style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF0F172A), fontSize: 18),
         ),
         backgroundColor: Colors.white,
-        elevation: 0.5,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: const Color(0xFFF1F5F9), height: 1),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined, color: Color(0xFF0F172A)),
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 40),
         child: Column(
           children: [
-            // 1. User Header
+            // 1. User Header & Profile Avatar Card
             Container(
               color: Colors.white,
               padding: const EdgeInsets.all(20),
@@ -129,17 +170,51 @@ class ProfileScreen extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      CircleAvatar(
-                        radius: 36,
-                        backgroundColor: const Color(0xFF0075FF).withOpacity(0.12),
-                        backgroundImage: (user?.photoURL != null && user!.photoURL!.isNotEmpty)
-                            ? CachedNetworkImageProvider(user.photoURL!) as ImageProvider
-                            : null,
-                        child: (user?.photoURL == null || user!.photoURL!.isEmpty)
-                            ? const Icon(Icons.person, size: 38, color: Color(0xFF0075FF))
-                            : null,
+                      // Avatar
+                      Stack(
+                        children: [
+                          Container(
+                            width: 72,
+                            height: 72,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF0075FF), Color(0xFF0052B4)],
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF0075FF).withOpacity(0.24),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: (user?.photoURL != null && user!.photoURL!.isNotEmpty)
+                                ? CachedNetworkImage(
+                                    imageUrl: user.photoURL!,
+                                    fit: BoxFit.cover,
+                                    errorWidget: (_, __, ___) => const Icon(Icons.person_rounded, size: 40, color: Colors.white),
+                                  )
+                                : const Center(child: Icon(Icons.person_rounded, size: 40, color: Colors.white)),
+                          ),
+                          if (isAdmin)
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(3),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFF59E0B),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.star_rounded, size: 14, color: Colors.white),
+                              ),
+                            ),
+                        ],
                       ),
                       const SizedBox(width: 16),
+                      // Details
                       Expanded(
                         child: auth.isAuthenticated
                             ? Column(
@@ -150,16 +225,16 @@ class ProfileScreen extends StatelessWidget {
                                       Flexible(
                                         child: Text(
                                           user?.displayName ?? 'Auto Parts Trader',
-                                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
                                       const SizedBox(width: 6),
-                                      const Icon(Icons.verified, size: 16, color: Color(0xFF0075FF)),
+                                      const Icon(Icons.verified_rounded, size: 16, color: Color(0xFF0075FF)),
                                     ],
                                   ),
-                                  const SizedBox(height: 3),
+                                  const SizedBox(height: 2),
                                   Text(
                                     user?.email ?? '',
                                     style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
@@ -167,40 +242,61 @@ class ProfileScreen extends StatelessWidget {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   const SizedBox(height: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: isAdmin ? const Color(0xFFFEF3C7) : const Color(0xFFDCFCE7),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Text(
-                                      isAdmin ? '⭐ PLATFORM ADMIN' : 'VERIFIED TRADER',
-                                      style: TextStyle(
-                                        color: isAdmin ? const Color(0xFFB45309) : const Color(0xFF16A34A),
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w800,
+                                  if (isAdmin)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFEF3C7),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(color: const Color(0xFFFDE68A)),
                                       ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: const [
+                                          Icon(Icons.shield_rounded, size: 12, color: Color(0xFFD97706)),
+                                          SizedBox(width: 4),
+                                          Text(
+                                            'SUPER ADMIN',
+                                            style: TextStyle(color: Color(0xFFD97706), fontSize: 10, fontWeight: FontWeight.w900),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  else
+                                    Row(
+                                      children: const [
+                                        Icon(Icons.shield_outlined, size: 13, color: Color(0xFF10B981)),
+                                        SizedBox(width: 4),
+                                        Text('Verified Seller & Buyer', style: TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.w700)),
+                                      ],
                                     ),
-                                  ),
                                 ],
                               )
                             : Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('Welcome, Guest', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                  const Text(
+                                    'Welcome, Guest Trader',
+                                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                                  ),
                                   const SizedBox(height: 4),
-                                  const Text('Sign in to list parts and chat with sellers', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                                  const Text(
+                                    'Sign in to list parts, chat & negotiate',
+                                    style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                                  ),
                                   const SizedBox(height: 8),
-                                  ElevatedButton(
-                                    onPressed: () {
+                                  GestureDetector(
+                                    onTap: () {
                                       Navigator.push(context, MaterialPageRoute(builder: (_) => const AuthScreen()));
                                     },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF0075FF),
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF0075FF),
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      child: const Text('Sign In / Register →', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
                                     ),
-                                    child: const Text('Sign In with Google', style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold)),
                                   ),
                                 ],
                               ),
@@ -208,220 +304,269 @@ class ProfileScreen extends StatelessWidget {
                     ],
                   ),
 
-                  // 2. Interactive Metrics Row (Matching React Native ProfileScreen)
+                  // Interactive Metric Badges
                   if (auth.isAuthenticated) ...[
                     const SizedBox(height: 20),
-                    const Divider(height: 1, color: Color(0xFFE2E8F0)),
-                    const SizedBox(height: 14),
-                    StreamBuilder<QuerySnapshot>(
-                      stream: _db.collection('spareParts').where('sellerId', isEqualTo: user!.uid).snapshots(),
-                      builder: (context, snap) {
-                        final adsCount = snap.data?.docs.where((d) => (d.data() as Map<String, dynamic>)['status'] != 'deleted').length ?? 0;
-                        final savedCount = partsProvider.favoritesCount;
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          // My Ads count
+                          StreamBuilder<QuerySnapshot>(
+                            stream: _db.collection('spareParts').where('sellerId', isEqualTo: user?.uid).snapshots(),
+                            builder: (context, snap) {
+                              final count = snap.data?.docs.length ?? 0;
+                              return _buildMetricItem(
+                                label: 'My Ads',
+                                value: '$count',
+                                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyAdsScreen())),
+                              );
+                            },
+                          ),
+                          Container(width: 1, height: 26, color: const Color(0xFFCBD5E1)),
 
-                        return Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _buildStatItem('My Ads', '$adsCount', () {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => const MyAdsScreen()));
-                            }),
-                            _buildStatDivider(),
-                            _buildStatItem('Followers', '12', () {}),
-                            _buildStatDivider(),
-                            _buildStatItem('Following', '4', () {}),
-                            _buildStatDivider(),
-                            _buildStatItem('Saved', '$savedCount', () {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => const WishlistScreen()));
-                            }),
-                          ],
-                        );
-                      },
+                          // Wishlist count
+                          _buildMetricItem(
+                            label: 'Saved Parts',
+                            value: '${partsProvider.wishlistPartIds.length}',
+                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WishlistScreen())),
+                          ),
+                          Container(width: 1, height: 26, color: const Color(0xFFCBD5E1)),
+
+                          // Rating
+                          _buildMetricItem(
+                            label: 'Trust Rating',
+                            value: '4.9 ★',
+                            onTap: () {},
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ],
               ),
             ),
-
             const SizedBox(height: 12),
 
-            // 3. Settings & Actions Menu
-            _buildSettingSection([
-              if (auth.isAuthenticated)
-                _buildSettingTile(
-                  icon: Icons.person_outline,
-                  title: 'Edit Profile',
-                  subtitle: 'Update name, mobile, location & bio',
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen()));
-                  },
+            // 2. Super Admin Portal Hub (Visible only to Admin emails)
+            if (isAdmin) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Row(
+                  children: [
+                    Container(width: 4, height: 16, decoration: BoxDecoration(color: const Color(0xFFF59E0B), borderRadius: BorderRadius.circular(2))),
+                    const SizedBox(width: 8),
+                    const Text('Admin Management Portal', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF0F172A))),
+                  ],
                 ),
-              _buildSettingTile(
-                icon: Icons.list_alt,
-                title: lang.t('myAds'),
-                subtitle: 'Manage active & sold spare parts',
-                onTap: () {
-                  if (auth.isAuthenticated) {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const MyAdsScreen()));
-                  } else {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AuthScreen()));
-                  }
-                },
               ),
-              _buildSettingTile(
-                icon: Icons.favorite_border,
-                title: lang.t('wishlist'),
-                subtitle: 'Your bookmarked automobile parts',
-                onTap: () {
-                  if (auth.isAuthenticated) {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const WishlistScreen()));
-                  } else {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AuthScreen()));
-                  }
-                },
-              ),
-              _buildSettingTile(
-                icon: Icons.history,
-                title: 'Recently Viewed',
-                subtitle: 'Spares you recently browsed',
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const RecentlyViewedScreen()));
-                },
-              ),
-              _buildSettingTile(
-                icon: Icons.language,
-                title: lang.t('language'),
-                subtitle: lang.currentLanguage == 'ta' ? 'தமிழ் (Tamil)' : (lang.currentLanguage == 'hi' ? 'हिन्दी (Hindi)' : 'English'),
-                onTap: () => _showLanguageDialog(context),
-              ),
-              _buildSettingTile(
-                icon: Icons.notifications_none,
-                title: 'Notifications',
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
-                },
-              ),
-              _buildSettingTile(
-                icon: Icons.settings_outlined,
-                title: 'App Settings',
-                subtitle: 'Notifications, sound & cache',
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
-                },
-              ),
-            ]),
-
-            const SizedBox(height: 12),
-
-            // 4. Admin Panel Section (Visible if Admin or for development)
-            if (isAdmin)
-              _buildSettingSection([
-                _buildSettingTile(
-                  icon: Icons.admin_panel_settings_outlined,
-                  iconColor: const Color(0xFF0075FF),
-                  title: 'Admin Dashboard & Moderation',
-                  subtitle: 'Platform analytics, listings moderation',
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminDashboardScreen()));
-                  },
+              const SizedBox(height: 6),
+              Container(
+                color: Colors.white,
+                child: Column(
+                  children: [
+                    _buildMenuTile(
+                      icon: Icons.admin_panel_settings_rounded,
+                      iconColor: const Color(0xFFF59E0B),
+                      title: 'Platform Admin Dashboard',
+                      subtitle: 'Moderate listings, verify users & ban accounts',
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminDashboardScreen())),
+                    ),
+                    const Divider(height: 1, indent: 56, color: Color(0xFFF1F5F9)),
+                    _buildMenuTile(
+                      icon: Icons.alt_route_rounded,
+                      iconColor: const Color(0xFF0075FF),
+                      title: 'Manage Brands & Categories',
+                      subtitle: 'Add car models, subcategories & OEM types',
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminTaxonomyScreen())),
+                    ),
+                  ],
                 ),
-                _buildSettingTile(
-                  icon: Icons.auto_awesome_mosaic_outlined,
-                  iconColor: const Color(0xFF0075FF),
-                  title: 'Categories & Brands CMS',
-                  subtitle: 'Manage live car brands & spare parts categories',
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminTaxonomyScreen()));
-                  },
-                ),
-              ]),
-
-            if (isAdmin) const SizedBox(height: 12),
-
-            // 5. Support & Legal
-            _buildSettingSection([
-              _buildSettingTile(
-                icon: Icons.help_outline,
-                title: 'Help & Support (24x7)',
-                subtitle: 'Direct call, email & marketplace FAQs',
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpSupportScreen()));
-                },
               ),
-            ]),
+              const SizedBox(height: 12),
+            ],
 
-            const SizedBox(height: 12),
-
-            // 6. Sign Out Button
-            if (auth.isAuthenticated)
-              _buildSettingSection([
-                _buildSettingTile(
-                  icon: Icons.logout,
-                  title: 'Log Out',
-                  iconColor: Colors.red,
-                  textColor: Colors.red,
-                  onTap: () => _confirmSignOut(context, auth),
-                ),
-              ]),
-
-            const SizedBox(height: 24),
-            const Text(
-              'Auto Parts India v1.0.0 • Verified Marketplace',
-              style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+            // 3. Marketplace Activities
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Row(
+                children: [
+                  Container(width: 4, height: 16, decoration: BoxDecoration(color: const Color(0xFF0075FF), borderRadius: BorderRadius.circular(2))),
+                  const SizedBox(width: 8),
+                  const Text('Marketplace Activities', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF0F172A))),
+                ],
+              ),
             ),
-            const SizedBox(height: 36),
+            const SizedBox(height: 6),
+            Container(
+              color: Colors.white,
+              child: Column(
+                children: [
+                  _buildMenuTile(
+                    icon: Icons.inventory_2_outlined,
+                    iconColor: const Color(0xFF0075FF),
+                    title: 'My Listed Parts (Ads)',
+                    subtitle: 'Manage active, sold, and deleted ads',
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyAdsScreen())),
+                  ),
+                  const Divider(height: 1, indent: 56, color: Color(0xFFF1F5F9)),
+                  _buildMenuTile(
+                    icon: Icons.favorite_outline_rounded,
+                    iconColor: const Color(0xFFEF4444),
+                    title: 'Wishlist / Saved Parts',
+                    subtitle: 'Spare parts you bookmarked for later',
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WishlistScreen())),
+                  ),
+                  const Divider(height: 1, indent: 56, color: Color(0xFFF1F5F9)),
+                  _buildMenuTile(
+                    icon: Icons.history_rounded,
+                    iconColor: const Color(0xFF8B5CF6),
+                    title: 'Recently Viewed Parts',
+                    subtitle: 'History of parts you browsed recently',
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RecentlyViewedScreen())),
+                  ),
+                  const Divider(height: 1, indent: 56, color: Color(0xFFF1F5F9)),
+                  _buildMenuTile(
+                    icon: Icons.notifications_none_rounded,
+                    iconColor: const Color(0xFF10B981),
+                    title: 'Notifications & Alerts',
+                    subtitle: 'Offers, chats and price drop notices',
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen())),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // 4. Preferences & Support
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Row(
+                children: [
+                  Container(width: 4, height: 16, decoration: BoxDecoration(color: const Color(0xFF0075FF), borderRadius: BorderRadius.circular(2))),
+                  const SizedBox(width: 8),
+                  const Text('Settings & Help Support', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF0F172A))),
+                ],
+              ),
+            ),
+            const SizedBox(height: 6),
+            Container(
+              color: Colors.white,
+              child: Column(
+                children: [
+                  _buildMenuTile(
+                    icon: Icons.language_rounded,
+                    iconColor: const Color(0xFF0075FF),
+                    title: 'Language / மொழி',
+                    subtitle: lang.currentLanguage == 'ta' ? 'தமிழ் (Tamil)' : (lang.currentLanguage == 'hi' ? 'हिन्दी (Hindi)' : 'English'),
+                    onTap: () => _showLanguageDialog(context),
+                  ),
+                  const Divider(height: 1, indent: 56, color: Color(0xFFF1F5F9)),
+                  if (auth.isAuthenticated) ...[
+                    _buildMenuTile(
+                      icon: Icons.badge_outlined,
+                      iconColor: const Color(0xFF64748B),
+                      title: 'Edit Trader Profile',
+                      subtitle: 'Update phone number, location, and workshop name',
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen())),
+                    ),
+                    const Divider(height: 1, indent: 56, color: Color(0xFFF1F5F9)),
+                  ],
+                  _buildMenuTile(
+                    icon: Icons.help_outline_rounded,
+                    iconColor: const Color(0xFF10B981),
+                    title: 'Help & 24/7 Helpline',
+                    subtitle: 'Safety rules, buyer protection & customer support',
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpSupportScreen())),
+                  ),
+                  const Divider(height: 1, indent: 56, color: Color(0xFFF1F5F9)),
+                  _buildMenuTile(
+                    icon: Icons.tune_rounded,
+                    iconColor: const Color(0xFF64748B),
+                    title: 'Settings & Cache',
+                    subtitle: 'App preferences, notifications & storage',
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Sign Out Button (If authenticated)
+            if (auth.isAuthenticated)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFFEF4444)),
+                      foregroundColor: const Color(0xFFEF4444),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    icon: const Icon(Icons.logout_rounded, size: 18),
+                    label: const Text('Sign Out from Auto Parts India', style: TextStyle(fontWeight: FontWeight.w800)),
+                    onPressed: () => _confirmSignOut(context, auth),
+                  ),
+                ),
+              ),
+
+            const SizedBox(height: 16),
+            Text(
+              'Auto Parts India v1.0.0 • 100% Genuine Marketplace',
+              style: TextStyle(fontSize: 11, color: const Color(0xFF94A3B8), fontWeight: FontWeight.w500),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStatItem(String label, String count, VoidCallback onTap) {
-    return GestureDetector(
+  Widget _buildMetricItem({required String label, required String value, required VoidCallback onTap}) {
+    return InkWell(
       onTap: onTap,
       child: Column(
         children: [
           Text(
-            count,
+            value,
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
           ),
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatDivider() {
-    return Container(
-      height: 24,
-      width: 1,
-      color: const Color(0xFFE2E8F0),
-    );
-  }
-
-  Widget _buildSettingSection(List<Widget> children) {
-    return Container(
-      color: Colors.white,
-      child: Column(children: children),
-    );
-  }
-
-  Widget _buildSettingTile({
+  Widget _buildMenuTile({
     required IconData icon,
+    required Color iconColor,
     required String title,
-    String? subtitle,
-    Color? iconColor,
-    Color? textColor,
+    required String subtitle,
     required VoidCallback onTap,
   }) {
     return ListTile(
-      leading: Icon(icon, color: iconColor ?? const Color(0xFF475569)),
-      title: Text(title, style: TextStyle(color: textColor ?? const Color(0xFF0F172A), fontSize: 14, fontWeight: FontWeight.w600)),
-      subtitle: subtitle != null ? Text(subtitle, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))) : null,
-      trailing: const Icon(Icons.chevron_right, color: Color(0xFF94A3B8), size: 20),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: iconColor.withOpacity(0.12),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: iconColor, size: 20),
+      ),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF0F172A))),
+      subtitle: Text(subtitle, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+      trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: Color(0xFF94A3B8)),
       onTap: onTap,
     );
   }

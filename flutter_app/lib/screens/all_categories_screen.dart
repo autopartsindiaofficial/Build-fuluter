@@ -5,6 +5,7 @@ import '../constants/categories_data.dart';
 import '../models/spare_part.dart';
 import '../services/firebase_service.dart';
 import '../widgets/product_card.dart';
+import 'search_screen.dart';
 
 class AllCategoriesScreen extends StatefulWidget {
   const AllCategoriesScreen({Key? key}) : super(key: key);
@@ -136,7 +137,15 @@ class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
                         backgroundColor: Colors.white,
                         side: const BorderSide(color: AppColors.border),
                         onPressed: () {
-                          // Navigate to filtered search
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => SearchScreen(
+                                initialQuery: partName,
+                                initialCategory: selectedCat.name,
+                              ),
+                            ),
+                          );
                         },
                       );
                     }).toList(),

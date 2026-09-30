@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -79,14 +80,33 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Listing'),
-        content: const Text('Are you sure you want to delete this listing? This action cannot be undone.'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: const [
+            Icon(Icons.delete_forever_rounded, color: Colors.red, size: 28),
+            SizedBox(width: 8),
+            Text('Delete Listing', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
+        content: const Text(
+          'Are you sure you want to permanently remove this spare part listing? This action cannot be undone.',
+          style: TextStyle(color: Color(0xFF475569), fontSize: 14, height: 1.4),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+          ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
+            child: const Text('Delete Listing', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -97,7 +117,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         await _db.collection('spareParts').doc(widget.part.id).delete();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Listing deleted successfully.')),
+            const SnackBar(
+              content: Text('Listing deleted successfully.'),
+              backgroundColor: Color(0xFF0F172A),
+            ),
           );
           Navigator.pop(context);
         }
@@ -127,15 +150,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               child: CachedNetworkImage(
                 imageUrl: imageUrl,
                 fit: BoxFit.contain,
-                placeholder: (_, __) => const Center(child: CircularProgressIndicator(color: Colors.white)),
-                errorWidget: (_, __, ___) => const Icon(Icons.broken_image, color: Colors.white, size: 50),
+                placeholder: (_, __) => const Center(
+                  child: CircularProgressIndicator(color: Colors.white),
+                ),
+                errorWidget: (_, __, ___) => const Icon(Icons.broken_image_rounded, color: Colors.white, size: 50),
               ),
             ),
             Positioned(
               top: 40,
               right: 20,
               child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                icon: const Icon(Icons.close_rounded, color: Colors.white, size: 28),
                 onPressed: () => Navigator.pop(ctx),
               ),
             ),
@@ -153,7 +178,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final currentUser = FirebaseAuth.instance.currentUser;
     final currentUserId = currentUser?.uid;
 
-    // Check ownership
     final isOwner = currentUserId != null &&
         (currentUserId == widget.part.sellerId || currentUserId == widget.part.userId);
 
@@ -173,22 +197,27 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0.5,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF0F172A)),
+          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF0F172A)),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           widget.part.title,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A)),
+          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF0F172A)),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: const Color(0xFFF1F5F9), height: 1),
         ),
         actions: [
           IconButton(
             icon: Icon(
-              isFav ? Icons.favorite : Icons.favorite_border,
-              color: isFav ? Colors.red : const Color(0xFF0F172A),
+              isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+              color: isFav ? const Color(0xFFEF4444) : const Color(0xFF0F172A),
             ),
             onPressed: () {
               partsProvider.toggleWishlist(widget.part.id);
@@ -203,23 +232,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           IconButton(
             icon: const Icon(Icons.share_outlined, color: Color(0xFF0F172A)),
             onPressed: () {
+              Clipboard.setData(ClipboardData(text: '${widget.part.title} - ${widget.part.price} on Auto Parts India'));
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Sharing "${widget.part.title}"')),
+                SnackBar(content: Text('Listing details copied to clipboard!')),
               );
             },
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 100),
+        padding: const EdgeInsets.only(bottom: 120),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Image Carousel with Indicator & Fullscreen Zoom
+            // 1. High-Impact Image Carousel with Specular Badges
             Stack(
               children: [
                 SizedBox(
-                  height: 280,
+                  height: 300,
                   width: double.infinity,
                   child: PageView.builder(
                     controller: _imagePageController,
@@ -229,55 +259,95 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       final url = images[idx];
                       return GestureDetector(
                         onTap: () => _openFullScreenImage(url),
-                        child: CachedNetworkImage(
-                          imageUrl: url,
-                          fit: BoxFit.cover,
-                          placeholder: (_, __) => Container(color: Colors.grey.shade100, child: const Center(child: CircularProgressIndicator())),
-                          errorWidget: (_, __, ___) => Container(color: Colors.grey.shade200, child: const Icon(Icons.directions_car, size: 60, color: Colors.grey)),
+                        child: Container(
+                          color: const Color(0xFF0F172A),
+                          child: CachedNetworkImage(
+                            imageUrl: url,
+                            fit: BoxFit.cover,
+                            placeholder: (_, __) => Container(
+                              color: const Color(0xFF1E293B),
+                              child: const Center(
+                                child: CircularProgressIndicator(color: Color(0xFF0075FF)),
+                              ),
+                            ),
+                            errorWidget: (_, __, ___) => Container(
+                              color: const Color(0xFF1E293B),
+                              child: const Icon(Icons.directions_car_rounded, size: 64, color: Colors.white54),
+                            ),
+                          ),
                         ),
                       );
                     },
                   ),
                 ),
-                // Indicator dots
+
+                // Tap to Zoom Hint
+                Positioned(
+                  bottom: 14,
+                  right: 14,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.65),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white24, width: 1),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.zoom_in_rounded, color: Colors.white, size: 14),
+                        SizedBox(width: 4),
+                        Text('Tap to zoom', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Image Index Indicator (e.g. 1 / 4)
                 if (images.length > 1)
                   Positioned(
-                    bottom: 12,
-                    left: 0,
-                    right: 0,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(
-                        images.length,
-                        (i) => Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 3),
-                          width: _activeImageIndex == i ? 18 : 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: _activeImageIndex == i ? const Color(0xFF0075FF) : Colors.white70,
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                        ),
+                    bottom: 14,
+                    left: 14,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.65),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white24, width: 1),
+                      ),
+                      child: Text(
+                        '${_activeImageIndex + 1} / ${images.length}',
+                        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
+
                 // Verified Badge on Top Left
                 if (widget.part.verified)
                   Positioned(
-                    top: 12,
-                    left: 12,
+                    top: 14,
+                    left: 14,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.75),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF0075FF), Color(0xFF0052B4)],
+                        ),
                         borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: const [
-                          Icon(Icons.verified, color: Colors.blueAccent, size: 13),
-                          SizedBox(width: 4),
-                          Text('VERIFIED PART', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                          Icon(Icons.verified_rounded, color: Colors.white, size: 13),
+                          SizedBox(width: 5),
+                          Text('VERIFIED OEM PART', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
                         ],
                       ),
                     ),
@@ -285,10 +355,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               ],
             ),
 
-            // 2. Price & Title Card
+            // 2. Price, Title & Condition Card
             Container(
               color: Colors.white,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -296,16 +366,39 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text(
-                        _currencyFormatter.format(widget.part.price),
-                        style: const TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFF0F172A),
-                        ),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            _currencyFormatter.format(widget.part.price),
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF0F172A),
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          if (widget.part.isNegotiable) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEFF6FF),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: const Color(0xFFBFDBFE)),
+                              ),
+                              child: const Text(
+                                'Negotiable',
+                                style: TextStyle(color: Color(0xFF1D4ED8), fontSize: 10, fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
+                      // Condition Pill
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: widget.part.condition.toLowerCase().contains('new')
                               ? const Color(0xFFDCFCE7)
@@ -318,31 +411,59 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             color: widget.part.condition.toLowerCase().contains('new')
                                 ? const Color(0xFF16A34A)
                                 : const Color(0xFFD97706),
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w900,
                             fontSize: 11,
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   Text(
                     widget.part.title,
                     style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
                       color: Color(0xFF0F172A),
-                      height: 1.3,
+                      height: 1.35,
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Icon(Icons.location_on, size: 14, color: Color(0xFF0075FF)),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${widget.part.location}${widget.part.district.isNotEmpty ? ', ' + widget.part.district : ''}',
-                        style: const TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500),
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0075FF).withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.location_on_rounded, size: 14, color: Color(0xFF0075FF)),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          '${widget.part.location}${widget.part.district.isNotEmpty ? ', ' + widget.part.district : ''}',
+                          style: const TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w600),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.remove_red_eye_rounded, size: 12, color: Color(0xFF64748B)),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${widget.part.views} views',
+                              style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -354,19 +475,56 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             // 3. Technical Specifications Card
             Container(
               color: Colors.white,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Automotive Specifications', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A))),
-                  const SizedBox(height: 12),
-                  _buildSpecTile('Car Brand', widget.part.carBrand, Icons.directions_car),
-                  _buildSpecTile('Car Model', widget.part.carModel, Icons.car_repair),
-                  if (widget.part.year.isNotEmpty) _buildSpecTile('Model Year', widget.part.year, Icons.calendar_today),
-                  _buildSpecTile('Part Category', widget.part.category, Icons.category),
-                  if (widget.part.subcategory.isNotEmpty) _buildSpecTile('Subcategory', widget.part.subcategory, Icons.subdirectory_arrow_right),
+                  Row(
+                    children: [
+                      Container(
+                        width: 4,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0075FF),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Automotive Specifications',
+                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF0F172A)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  _buildSpecTile('Car Brand', widget.part.carBrand, Icons.directions_car_rounded),
+                  _buildSpecTile('Car Model', widget.part.carModel, Icons.car_repair_rounded),
+                  if (widget.part.year.isNotEmpty) _buildSpecTile('Model Year', widget.part.year, Icons.calendar_today_rounded),
+                  _buildSpecTile('Part Category', widget.part.category, Icons.category_rounded),
+                  if (widget.part.subcategory.isNotEmpty) _buildSpecTile('Subcategory', widget.part.subcategory, Icons.subdirectory_arrow_right_rounded),
                   if (widget.part.oemNumber != null && widget.part.oemNumber!.isNotEmpty)
-                    _buildSpecTile('OEM Number', widget.part.oemNumber!, Icons.tag),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.tag_rounded, size: 18, color: Color(0xFF64748B)),
+                          const SizedBox(width: 10),
+                          const Text('OEM Number', style: TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500)),
+                          const Spacer(),
+                          Text(widget.part.oemNumber!, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Color(0xFF0075FF))),
+                          const SizedBox(width: 6),
+                          InkWell(
+                            onTap: () {
+                              Clipboard.setData(ClipboardData(text: widget.part.oemNumber!));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('OEM Number copied!'), duration: Duration(seconds: 1)),
+                              );
+                            },
+                            child: const Icon(Icons.copy_rounded, size: 15, color: Color(0xFF64748B)),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -376,30 +534,62 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             Container(
               color: Colors.white,
               width: double.infinity,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Description', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A))),
-                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Container(
+                        width: 4,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0075FF),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Description',
+                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF0F172A)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
                   Text(
                     widget.part.description ?? 'Genuine OEM automobile spare part in good working condition. Tested and verified.',
-                    style: const TextStyle(color: Color(0xFF475569), fontSize: 14, height: 1.5),
+                    style: const TextStyle(color: Color(0xFF475569), fontSize: 14, height: 1.55),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 8),
 
-            // 5. Seller Card
+            // 5. Verified Seller Card
             Container(
               color: Colors.white,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Seller Information', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A))),
-                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Container(
+                        width: 4,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0075FF),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Seller Information',
+                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF0F172A)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
                   InkWell(
                     onTap: () {
                       Navigator.push(
@@ -414,38 +604,67 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         ),
                       );
                     },
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 24,
-                          backgroundColor: const Color(0xFF0075FF).withOpacity(0.12),
-                          child: const Icon(Icons.person, color: Color(0xFF0075FF), size: 28),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.part.contactName ?? 'Verified Seller',
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF0075FF), Color(0xFF0052B4)],
                               ),
-                              Row(
-                                children: const [
-                                  Icon(Icons.star, size: 14, color: Colors.amber),
-                                  SizedBox(width: 2),
-                                  Text('4.9 (48 ratings) • View Profile →', style: TextStyle(fontSize: 12, color: Color(0xFF0075FF), fontWeight: FontWeight.w600)),
-                                ],
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Center(
+                              child: Icon(Icons.person_rounded, color: Colors.white, size: 28),
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        widget.part.contactName ?? 'Verified Seller',
+                                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: Color(0xFF0F172A)),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(Icons.verified_rounded, color: Color(0xFF0075FF), size: 16),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: const [
+                                    Icon(Icons.star_rounded, size: 15, color: Color(0xFFF59E0B)),
+                                    SizedBox(width: 3),
+                                    Text('4.9 (48 ratings) • View Profile →', style: TextStyle(fontSize: 12, color: Color(0xFF0075FF), fontWeight: FontWeight.w700)),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (widget.part.contactPhone != null && widget.part.contactPhone!.isNotEmpty)
+                            Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10B981).withOpacity(0.12),
+                                shape: BoxShape.circle,
                               ),
-                            ],
-                          ),
-                        ),
-                        if (widget.part.contactPhone != null && widget.part.contactPhone!.isNotEmpty)
-                          IconButton(
-                            icon: const Icon(Icons.call, color: Color(0xFF16A34A), size: 24),
-                            onPressed: () => _callPhone(widget.part.contactPhone!),
-                          ),
-                      ],
+                              child: IconButton(
+                                icon: const Icon(Icons.call_rounded, color: Color(0xFF10B981), size: 22),
+                                onPressed: () => _callPhone(widget.part.contactPhone!),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -456,36 +675,49 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             // 6. Safety Tips Card (OLX Marketplace Standard)
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: const Color(0xFFEFF6FF),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFBFDBFE)),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFBFDBFE), width: 1.2),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: const [
-                      Icon(Icons.shield_outlined, color: Color(0xFF0075FF), size: 18),
-                      SizedBox(width: 6),
-                      Text('Safety Tips for Auto Buyers', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A), fontSize: 13)),
+                      Icon(Icons.shield_rounded, color: Color(0xFF0075FF), size: 20),
+                      SizedBox(width: 8),
+                      Text('Safety Tips for Auto Parts Buyers', style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF1E3A8A), fontSize: 13)),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  const Text('• Meet the seller at a safe public location or mechanic garage.', style: TextStyle(fontSize: 12, color: Color(0xFF334155), height: 1.4)),
-                  const Text('• Inspect the spare part in person before making any payment.', style: TextStyle(fontSize: 12, color: Color(0xFF334155), height: 1.4)),
-                  const Text('• Never send advance courier fee to unverified callers.', style: TextStyle(fontSize: 12, color: Color(0xFF334155), height: 1.4)),
+                  const SizedBox(height: 8),
+                  const Text('• Meet the seller at a safe mechanic garage or public workshop.', style: TextStyle(fontSize: 12, color: Color(0xFF334155), height: 1.45)),
+                  const Text('• Inspect the part number and fitment compatibility before paying.', style: TextStyle(fontSize: 12, color: Color(0xFF334155), height: 1.45)),
+                  const Text('• Never send advance courier fee to unverified callers.', style: TextStyle(fontSize: 12, color: Color(0xFF334155), height: 1.45)),
                 ],
               ),
             ),
 
-            // 7. Similar Parts (Matching Brand/Category)
+            // 7. Similar Parts (Matching Brand)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Text(
-                'More parts for ${widget.part.carBrand}',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A)),
+              child: Row(
+                children: [
+                  Container(
+                    width: 4,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0075FF),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'More Spares for ${widget.part.carBrand}',
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF0F172A)),
+                  ),
+                ],
               ),
             ),
             StreamBuilder<QuerySnapshot>(
@@ -501,7 +733,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 }
 
                 return SizedBox(
-                  height: 190,
+                  height: 195,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -516,22 +748,29 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           );
                         },
                         child: Container(
-                          width: 140,
+                          width: 145,
                           margin: const EdgeInsets.symmetric(horizontal: 4),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(14),
                             border: Border.all(color: const Color(0xFFE2E8F0)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF0F172A).withOpacity(0.03),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               ClipRRect(
-                                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
                                 child: CachedNetworkImage(
                                   imageUrl: item.imageUrl,
                                   height: 95,
-                                  width: 140,
+                                  width: 145,
                                   fit: BoxFit.cover,
                                   errorWidget: (_, __, ___) => Container(height: 95, color: Colors.grey.shade200),
                                 ),
@@ -543,11 +782,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   children: [
                                     Text(
                                       _currencyFormatter.format(item.price),
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0075FF)),
+                                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Color(0xFF0075FF)),
                                     ),
+                                    const SizedBox(height: 2),
                                     Text(
                                       item.title,
-                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -574,11 +814,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 10,
-              offset: const Offset(0, -3),
+              color: const Color(0xFF0F172A).withOpacity(0.08),
+              blurRadius: 16,
+              offset: const Offset(0, -4),
             ),
           ],
+          border: const Border(
+            top: BorderSide(color: Color(0xFFF1F5F9), width: 1.5),
+          ),
         ),
         child: SafeArea(
           child: isOwner
@@ -588,13 +831,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     Expanded(
                       child: OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Colors.red),
-                          foregroundColor: Colors.red,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          side: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+                          foregroundColor: const Color(0xFFEF4444),
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         ),
-                        icon: const Icon(Icons.delete_outline),
-                        label: const Text('Delete Ad', style: TextStyle(fontWeight: FontWeight.bold)),
+                        icon: const Icon(Icons.delete_outline_rounded),
+                        label: const Text('Delete Ad', style: TextStyle(fontWeight: FontWeight.w800)),
                         onPressed: _handleDeleteAd,
                       ),
                     ),
@@ -604,11 +847,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF0075FF),
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          elevation: 0,
                         ),
-                        icon: const Icon(Icons.edit_outlined),
-                        label: const Text('Edit Listing', style: TextStyle(fontWeight: FontWeight.bold)),
+                        icon: const Icon(Icons.edit_rounded),
+                        label: const Text('Edit Listing', style: TextStyle(fontWeight: FontWeight.w800)),
                         onPressed: () {
                           Navigator.push(
                             context,
@@ -619,7 +863,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                   ],
                 )
-              // Buyer Controls (Direct Call, Make Offer, Chat - NO WHATSAPP DIRECT)
+              // Buyer Controls (Direct Call, Make Offer, Chat)
               : Row(
                   children: [
                     // Direct Call Phone Dialer
@@ -628,13 +872,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         margin: const EdgeInsets.only(right: 8),
                         child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Color(0xFF16A34A), width: 1.5),
-                            foregroundColor: const Color(0xFF16A34A),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            side: const BorderSide(color: Color(0xFF10B981), width: 1.5),
+                            foregroundColor: const Color(0xFF10B981),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                           ),
                           onPressed: () => _callPhone(widget.part.contactPhone!),
-                          child: const Icon(Icons.call, size: 20),
+                          child: const Icon(Icons.call_rounded, size: 20),
                         ),
                       ),
 
@@ -643,13 +887,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       flex: 1,
                       child: OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFF0075FF)),
+                          side: const BorderSide(color: Color(0xFF0075FF), width: 1.5),
                           foregroundColor: const Color(0xFF0075FF),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         ),
                         icon: const Icon(Icons.local_offer_outlined, size: 18),
-                        label: const Text('Make Offer', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        label: const Text('Make Offer', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
                         onPressed: () {
                           final currentUid = currentUser?.uid ?? 'guest_buyer';
                           final currentName = currentUser?.displayName ?? 'Buyer';
@@ -673,11 +917,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF0075FF),
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          elevation: 0,
                         ),
-                        icon: const Icon(Icons.chat_bubble_outline, size: 18),
-                        label: const Text('Chat', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+                        label: const Text('Chat', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
                         onPressed: () {
                           final currentUid = currentUser?.uid ?? 'guest_buyer';
                           final conversationId = '${currentUid}_${widget.part.sellerId}_${widget.part.id}';
@@ -703,14 +948,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Widget _buildSpecTile(String label, String value, IconData icon) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
           Icon(icon, size: 18, color: const Color(0xFF64748B)),
           const SizedBox(width: 10),
-          Text(label, style: const TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+          Text(label, style: const TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500)),
           const Spacer(),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0F172A))),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF0F172A))),
         ],
       ),
     );

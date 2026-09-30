@@ -1,0 +1,24 @@
+
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="toyotaRed" x1="0" y1="0" x2="256" y2="256">
+      <stop offset="0%" stop-color="#EF4444"/>
+      <stop offset="100%" stop-color="#B91C1C"/>
+    </linearGradient>
+    <linearGradient id="toyotaDark" x1="0" y1="0" x2="0" y2="256">
+      <stop offset="0%" stop-color="#1E293B"/>
+      <stop offset="100%" stop-color="#0F172A"/>
+    </linearGradient>
+  </defs>
+
+  <g>
+    <!-- Outer Horizontal Oval -->
+    <path d="M 128,52 C 60,52 18,84 18,128 C 18,172 60,204 128,204 C 196,204 238,172 238,128 C 238,84 196,52 128,52 Z M 128,68 C 186,68 222,94 222,128 C 222,162 186,188 128,188 C 70,188 34,162 34,128 C 34,94 70,68 128,68 Z" fill="#0F172A"/>
+    
+    <!-- Inner Vertical Center Oval (The 'T' stem & heart of customer) -->
+    <path d="M 128,78 C 108,78 94,100 94,128 C 94,156 108,178 128,178 C 148,178 162,156 162,128 C 162,100 148,78 128,78 Z M 128,94 C 138,94 146,110 146,128 C 146,146 138,162 128,162 C 118,162 110,146 110,128 C 110,110 118,94 128,94 Z" fill="#0F172A"/>
+
+    <!-- Inner Horizontal Cross Oval (The 'T' top bar) -->
+    <path d="M 128,76 C 88,76 56,92 56,108 C 56,124 88,136 128,136 C 168,136 200,124 200,108 C 200,92 168,76 128,76 Z M 128,90 C 158,90 182,100 182,108 C 182,116 158,122 128,122 C 98,122 74,116 74,108 C 74,100 98,90 128,90 Z" fill="#0F172A"/>
+  </g>
+</svg>

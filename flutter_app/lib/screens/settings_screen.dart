@@ -15,7 +15,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _notificationsEnabled = true;
   bool _locationEnabled = true;
   bool _soundEnabled = true;
-  String _cacheSize = '2.4 MB';
+  String _cacheSize = '3.8 MB';
 
   @override
   void initState() {
@@ -54,20 +54,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Clear App Cache?'),
-        content: const Text('This will free up local temporary image storage.'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: const [
+            Icon(Icons.cleaning_services_rounded, color: Color(0xFF0075FF), size: 22),
+            SizedBox(width: 8),
+            Text('Clear App Cache', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
+          ],
+        ),
+        content: const Text(
+          'This will free up local image storage and refresh thumbnail cache without affecting your account data.',
+          style: TextStyle(fontSize: 13, color: Color(0xFF475569), height: 1.4),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+          ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
               setState(() => _cacheSize = '0 KB');
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Cache cleared successfully!'), backgroundColor: Colors.green),
+                const SnackBar(content: Text('Temporary cache cleared successfully!'), backgroundColor: Color(0xFF10B981)),
               );
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text('Clear', style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0075FF),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Clear Now', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -79,96 +98,167 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final lang = Provider.of<LanguageProvider>(context);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('App Settings', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('App Settings', style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF0F172A), fontSize: 18)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: const Color(0xFFF1F5F9), height: 1),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF0F172A)),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text('Preferences', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          // 1. Preferences Section
+          Row(
+            children: [
+              Container(width: 4, height: 16, decoration: BoxDecoration(color: const Color(0xFF0075FF), borderRadius: BorderRadius.circular(2))),
+              const SizedBox(width: 8),
+              const Text('Marketplace Preferences', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF0F172A))),
+            ],
+          ),
           const SizedBox(height: 8),
 
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: AppColors.border)),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
             child: Column(
               children: [
                 SwitchListTile(
                   value: _notificationsEnabled,
                   onChanged: _toggleNotification,
-                  title: const Text('Push Notifications', style: TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Get alerts for messages and price drops', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                  secondary: const Icon(Icons.notifications_active_outlined, color: AppColors.primary),
-                  activeColor: AppColors.primary,
+                  title: const Text('Push Notifications', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  subtitle: const Text('Instant alerts for price offers, chats, and deals', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                  secondary: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: const Color(0xFF0075FF).withOpacity(0.1), shape: BoxShape.circle),
+                    child: const Icon(Icons.notifications_active_rounded, color: Color(0xFF0075FF), size: 20),
+                  ),
+                  activeColor: const Color(0xFF0075FF),
                 ),
-                const Divider(height: 1),
+                const Divider(height: 1, indent: 64, color: Color(0xFFF1F5F9)),
                 SwitchListTile(
                   value: _locationEnabled,
                   onChanged: _toggleLocation,
-                  title: const Text('Location Services', style: TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Show nearby auto spare parts in your city', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                  secondary: const Icon(Icons.my_location, color: AppColors.primary),
-                  activeColor: AppColors.primary,
+                  title: const Text('Location Services', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  subtitle: const Text('Prioritize spare parts available in your city/state', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                  secondary: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: const Color(0xFF10B981).withOpacity(0.1), shape: BoxShape.circle),
+                    child: const Icon(Icons.my_location_rounded, color: Color(0xFF10B981), size: 20),
+                  ),
+                  activeColor: const Color(0xFF0075FF),
                 ),
-                const Divider(height: 1),
+                const Divider(height: 1, indent: 64, color: Color(0xFFF1F5F9)),
                 SwitchListTile(
                   value: _soundEnabled,
                   onChanged: _toggleSound,
-                  title: const Text('In-App Notification Sounds', style: TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Play sound on new chat messages', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                  secondary: const Icon(Icons.volume_up_outlined, color: AppColors.primary),
-                  activeColor: AppColors.primary,
+                  title: const Text('In-App Alert Chimes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  subtitle: const Text('Play sound on new chat message arrivals', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                  secondary: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: const Color(0xFFF59E0B).withOpacity(0.1), shape: BoxShape.circle),
+                    child: const Icon(Icons.volume_up_rounded, color: Color(0xFFF59E0B), size: 20),
+                  ),
+                  activeColor: const Color(0xFF0075FF),
                 ),
               ],
             ),
           ),
 
           const SizedBox(height: 20),
-          const Text('Storage & Cache', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+
+          // 2. Storage & Cache Section
+          Row(
+            children: [
+              Container(width: 4, height: 16, decoration: BoxDecoration(color: const Color(0xFF0075FF), borderRadius: BorderRadius.circular(2))),
+              const SizedBox(width: 8),
+              const Text('Storage & Offline Cache', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF0F172A))),
+            ],
+          ),
           const SizedBox(height: 8),
 
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: AppColors.border)),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
             child: ListTile(
-              leading: const Icon(Icons.cleaning_services_outlined, color: AppColors.primary),
-              title: const Text('Clear Temporary Cache', style: TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text('Current cache size: $_cacheSize', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-              trailing: TextButton(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: const Color(0xFF64748B).withOpacity(0.1), shape: BoxShape.circle),
+                child: const Icon(Icons.cleaning_services_rounded, color: Color(0xFF64748B), size: 20),
+              ),
+              title: const Text('Clear Image Cache', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              subtitle: Text('Temporary thumbnail storage: $_cacheSize', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+              trailing: ElevatedButton(
                 onPressed: _clearCache,
-                child: const Text('Clear', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0075FF),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: const Text('Clear', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
               ),
             ),
           ),
 
-          const SizedBox(height: 20),
-          const Text('About & Legal', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const SizedBox(height: 24),
+
+          // 3. About Section
+          Row(
+            children: [
+              Container(width: 4, height: 16, decoration: BoxDecoration(color: const Color(0xFF0075FF), borderRadius: BorderRadius.circular(2))),
+              const SizedBox(width: 8),
+              const Text('About Platform', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF0F172A))),
+            ],
+          ),
           const SizedBox(height: 8),
 
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: AppColors.border)),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
             child: Column(
               children: [
-                ListTile(
-                  leading: const Icon(Icons.privacy_tip_outlined, color: AppColors.primary),
-                  title: const Text('Privacy Policy'),
-                  trailing: const Icon(Icons.chevron_right, size: 18),
-                  onTap: () {},
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: const [
+                    Text('App Version', style: TextStyle(fontSize: 13, color: Color(0xFF475569), fontWeight: FontWeight.w600)),
+                    Text('v1.0.0 (Production Build)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0F172A))),
+                  ],
                 ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.description_outlined, color: AppColors.primary),
-                  title: const Text('Terms of Service'),
-                  trailing: const Icon(Icons.chevron_right, size: 18),
-                  onTap: () {},
+                const Divider(height: 20, color: Color(0xFFF1F5F9)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: const [
+                    Text('Platform Framework', style: TextStyle(fontSize: 13, color: Color(0xFF475569), fontWeight: FontWeight.w600)),
+                    Text('Flutter Automotive Edition', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0075FF))),
+                  ],
                 ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.info_outline, color: AppColors.primary),
-                  title: const Text('App Version'),
-                  trailing: const Text('1.0.0 (Build 100)', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                const Divider(height: 20, color: Color(0xFFF1F5F9)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: const [
+                    Text('Database Engine', style: TextStyle(fontSize: 13, color: Color(0xFF475569), fontWeight: FontWeight.w600)),
+                    Text('Cloud Firestore Real-Time', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF10B981))),
+                  ],
                 ),
               ],
             ),

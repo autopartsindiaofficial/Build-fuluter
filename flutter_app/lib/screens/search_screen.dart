@@ -122,22 +122,56 @@ class _SearchScreenState extends State<SearchScreen> {
     } catch (_) {}
   }
 
+  int get _activeFilterCount {
+    int count = 0;
+    if (_selectedCategory != 'All Categories') count++;
+    if (_selectedBrand != 'All Brands') count++;
+    if (_selectedCondition != 'All Conditions') count++;
+    if (_sortBy != 'newest') count++;
+    return count;
+  }
+
   void _showFilterModal() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) => Container(
-          padding: const EdgeInsets.all(20),
-          height: MediaQuery.of(context).size.height * 0.70,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+          height: MediaQuery.of(context).size.height * 0.75,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Drag Handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Filters & Sorting', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF0F172A))),
+                  Row(
+                    children: [
+                      const Icon(Icons.tune_rounded, color: Color(0xFF0075FF), size: 22),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Filters & Sorting',
+                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Color(0xFF0F172A)),
+                      ),
+                    ],
+                  ),
                   TextButton(
                     onPressed: () {
                       setState(() {
@@ -148,42 +182,56 @@ class _SearchScreenState extends State<SearchScreen> {
                       });
                       Navigator.pop(ctx);
                     },
-                    child: const Text('Reset All', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                    child: const Text('Reset All', style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
-              const Divider(),
+              const Divider(color: Color(0xFFF1F5F9)),
               Expanded(
                 child: ListView(
                   children: [
                     // Sort By
-                    const Text('Sort By', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    const Text('Sort By', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF0F172A))),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
+                      runSpacing: 8,
                       children: [
                         _buildModalChip('newest', '✨ Newest First', _sortBy, (val) => setModalState(() => _sortBy = val)),
                         _buildModalChip('price_low', '₹ Price: Low to High', _sortBy, (val) => setModalState(() => _sortBy = val)),
                         _buildModalChip('price_high', '₹ Price: High to Low', _sortBy, (val) => setModalState(() => _sortBy = val)),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 18),
 
                     // Condition
-                    const Text('Part Condition', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    const Text('Part Condition', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF0F172A))),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
+                      runSpacing: 8,
                       children: [
                         _buildModalChip('All Conditions', 'All', _selectedCondition, (val) => setModalState(() => _selectedCondition = val)),
                         _buildModalChip('Brand New', '✨ Brand New', _selectedCondition, (val) => setModalState(() => _selectedCondition = val)),
                         _buildModalChip('Used', '🔧 Used / Pre-owned', _selectedCondition, (val) => setModalState(() => _selectedCondition = val)),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 18),
+
+                    // Brand Filter
+                    const Text('Car Brand', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF0F172A))),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: _popularBrands.map((b) {
+                        return _buildModalChip(b, b, _selectedBrand, (val) => setModalState(() => _selectedBrand = val));
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 18),
 
                     // Category
-                    const Text('Category', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    const Text('Category', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF0F172A))),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 6,
@@ -195,6 +243,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   ],
                 ),
               ),
+              const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 height: 48,
@@ -202,7 +251,8 @@ class _SearchScreenState extends State<SearchScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0075FF),
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 0,
                   ),
                   onPressed: () {
                     setState(() {});
@@ -218,66 +268,66 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _buildModalChip(String key, String label, String currentVal, Function(String) onSelect) {
-    final isSelected = currentVal == key;
-    return ChoiceChip(
-      label: Text(label),
-      selected: isSelected,
-      selectedColor: const Color(0xFF0075FF),
-      labelStyle: TextStyle(
-        fontSize: 12,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        color: isSelected ? Colors.white : const Color(0xFF334155),
+  Widget _buildModalChip(String value, String label, String currentSelected, Function(String) onSelect) {
+    final isSelected = currentSelected == value;
+    return GestureDetector(
+      onTap: () => onSelect(value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF0075FF) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: isSelected ? const Color(0xFF0075FF) : const Color(0xFFE2E8F0)),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+            color: isSelected ? Colors.white : const Color(0xFF334155),
+          ),
+        ),
       ),
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: isSelected ? const Color(0xFF0075FF) : const Color(0xFFE2E8F0)),
-      ),
-      onSelected: (val) {
-        if (val) onSelect(key);
-      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final lang = Provider.of<LanguageProvider>(context);
-    final queryText = _searchCtrl.text.trim().toLowerCase();
-    final hasFilterApplied = _selectedCategory != 'All Categories' || _selectedBrand != 'All Brands' || _selectedCondition != 'All Conditions' || _sortBy != 'newest';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
+        elevation: 0,
         backgroundColor: Colors.white,
-        elevation: 0.5,
+        surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF0F172A)),
+          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF0F172A)),
           onPressed: () => Navigator.pop(context),
         ),
         titleSpacing: 0,
         title: Container(
-          height: 40,
+          height: 42,
           margin: const EdgeInsets.only(right: 8),
           decoration: BoxDecoration(
             color: const Color(0xFFF1F5F9),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: TextField(
             controller: _searchCtrl,
-            autofocus: widget.initialQuery == null,
+            autofocus: false,
+            textInputAction: TextInputAction.search,
             onSubmitted: (val) {
               _saveSearchQuery(val);
               setState(() {});
             },
-            onChanged: (val) => setState(() {}),
             decoration: InputDecoration(
-              hintText: 'Search parts, brands, OEM numbers...',
-              hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
-              prefixIcon: const Icon(Icons.search, size: 20, color: Color(0xFF0075FF)),
+              hintText: lang.t('searchPlaceholder'),
+              hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+              prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF0075FF), size: 20),
               suffixIcon: _searchCtrl.text.isNotEmpty
                   ? IconButton(
-                      icon: const Icon(Icons.clear, size: 18, color: Colors.grey),
+                      icon: const Icon(Icons.cancel_rounded, color: Color(0xFF94A3B8), size: 18),
                       onPressed: () {
                         _searchCtrl.clear();
                         setState(() {});
@@ -290,86 +340,173 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
         ),
         actions: [
-          IconButton(
-            icon: Icon(
-              Icons.tune,
-              color: hasFilterApplied ? const Color(0xFF0075FF) : const Color(0xFF0F172A),
-            ),
-            onPressed: _showFilterModal,
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // 1. Horizontal Quick Filters Bar
-          Container(
-            height: 44,
-            color: Colors.white,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              children: [
-                // Filter Modal Trigger Pill
-                GestureDetector(
-                  onTap: _showFilterModal,
+          // Filter Trigger with active count badge
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.tune_rounded, color: Color(0xFF0F172A), size: 22),
+                onPressed: _showFilterModal,
+              ),
+              if (_activeFilterCount > 0)
+                Positioned(
+                  top: 10,
+                  right: 8,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
-                      color: hasFilterApplied ? const Color(0xFF0075FF).withOpacity(0.12) : const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: hasFilterApplied ? const Color(0xFF0075FF) : const Color(0xFFE2E8F0)),
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF0075FF),
+                      shape: BoxShape.circle,
                     ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.tune, size: 14, color: hasFilterApplied ? const Color(0xFF0075FF) : const Color(0xFF64748B)),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Filters',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: hasFilterApplied ? const Color(0xFF0075FF) : const Color(0xFF334155),
-                          ),
-                        ),
-                      ],
+                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                    child: Text(
+                      '$_activeFilterCount',
+                      style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
                     ),
                   ),
                 ),
-
-                // Popular Brands Pills
-                ..._popularBrands.map((b) {
-                  final isSelected = _selectedBrand == b;
+            ],
+          ),
+          const SizedBox(width: 4),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: const Color(0xFFF1F5F9), height: 1),
+        ),
+      ),
+      body: Column(
+        children: [
+          // Trending / Quick Suggestions Rail
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            child: SizedBox(
+              height: 30,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: _trendingSuggestions.length,
+                itemBuilder: (context, i) {
+                  final s = _trendingSuggestions[i];
                   return GestureDetector(
                     onTap: () {
-                      setState(() {
-                        _selectedBrand = isSelected && b != 'All Brands' ? 'All Brands' : b;
-                      });
+                      _searchCtrl.text = s;
+                      _saveSearchQuery(s);
+                      setState(() {});
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       margin: const EdgeInsets.only(right: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: isSelected ? const Color(0xFF0075FF) : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: isSelected ? const Color(0xFF0075FF) : const Color(0xFFE2E8F0)),
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      child: Text(
-                        b,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                          color: isSelected ? Colors.white : const Color(0xFF475569),
-                        ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.trending_up_rounded, size: 13, color: Color(0xFF0075FF)),
+                          const SizedBox(width: 4),
+                          Text(s, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF475569))),
+                        ],
                       ),
                     ),
                   );
-                }),
-              ],
+                },
+              ),
             ),
           ),
 
-          // 2. Results Stream OR Search History Suggestions
+          // Recent Searches Bar (If search input is empty)
+          if (_searchCtrl.text.isEmpty && _recentSearches.isNotEmpty)
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Recent Searches',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF64748B)),
+                      ),
+                      GestureDetector(
+                        onTap: _clearRecentSearches,
+                        child: const Text('Clear All', style: TextStyle(color: Color(0xFFEF4444), fontSize: 11, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: _recentSearches.map((q) {
+                      return GestureDetector(
+                        onTap: () {
+                          _searchCtrl.text = q;
+                          setState(() {});
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFF6FF),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFBFDBFE)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.history_rounded, size: 13, color: Color(0xFF0075FF)),
+                              const SizedBox(width: 4),
+                              Text(q, style: const TextStyle(fontSize: 11, color: Color(0xFF1D4ED8), fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+
+          // Live Filter Chips Row
+          if (_selectedCategory != 'All Categories' || _selectedBrand != 'All Brands' || _selectedCondition != 'All Conditions')
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: const Color(0xFFF8FAFC),
+              child: Row(
+                children: [
+                  const Text('Applied: ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+                  if (_selectedCategory != 'All Categories')
+                    Container(
+                      margin: const EdgeInsets.only(right: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(color: const Color(0xFFE2E8F0), borderRadius: BorderRadius.circular(8)),
+                      child: Text(_selectedCategory, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                    ),
+                  if (_selectedBrand != 'All Brands')
+                    Container(
+                      margin: const EdgeInsets.only(right: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(color: const Color(0xFFE2E8F0), borderRadius: BorderRadius.circular(8)),
+                      child: Text(_selectedBrand, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                    ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedCategory = 'All Categories';
+                        _selectedBrand = 'All Brands';
+                        _selectedCondition = 'All Conditions';
+                      });
+                    },
+                    child: const Text('Reset', style: TextStyle(color: Color(0xFFEF4444), fontSize: 11, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ),
+
+          // Results Grid Stream
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: _db.collection('spareParts').snapshots(),
@@ -378,188 +515,81 @@ class _SearchScreenState extends State<SearchScreen> {
                   return const Center(child: CircularProgressIndicator(color: Color(0xFF0075FF)));
                 }
 
-                final allDocs = snapshot.data?.docs ?? [];
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return _buildEmptyState();
+                }
 
-                // Filter logic matching React Native searchHelper
-                var matched = allDocs.where((doc) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  if (data['isDeleted'] == true || data['status'] == 'deleted') return false;
+                var parts = snapshot.data!.docs.map((d) => SparePart.fromFirestore(d)).toList();
 
-                  final title = (data['title'] ?? '').toString().toLowerCase();
-                  final brand = (data['carBrand'] ?? '').toString().toLowerCase();
-                  final model = (data['carModel'] ?? '').toString().toLowerCase();
-                  final category = (data['category'] ?? '').toString().toLowerCase();
-                  final subcategory = (data['subcategory'] ?? '').toString().toLowerCase();
-                  final oem = (data['oemNumber'] ?? '').toString().toLowerCase();
-                  final desc = (data['description'] ?? '').toString().toLowerCase();
-                  final condition = (data['condition'] ?? '').toString().toLowerCase();
+                // 1. Text Query Filter
+                final query = _searchCtrl.text.trim().toLowerCase();
+                if (query.isNotEmpty) {
+                  parts = parts.where((p) {
+                    final t = p.title.toLowerCase();
+                    final c = p.category.toLowerCase();
+                    final b = p.carBrand.toLowerCase();
+                    final m = p.carModel.toLowerCase();
+                    final o = (p.oemNumber ?? '').toLowerCase();
+                    return t.contains(query) || c.contains(query) || b.contains(query) || m.contains(query) || o.contains(query);
+                  }).toList();
+                }
 
-                  // Query search matching
-                  if (queryText.isNotEmpty) {
-                    final terms = queryText.split(' ').where((t) => t.isNotEmpty);
-                    final fullText = '$title $brand $model $category $subcategory $oem $desc';
-                    for (var term in terms) {
-                      if (!fullText.contains(term)) return false;
+                // 2. Category Filter
+                if (_selectedCategory != 'All Categories') {
+                  parts = parts.where((p) => p.category.toLowerCase() == _selectedCategory.toLowerCase()).toList();
+                }
+
+                // 3. Brand Filter
+                if (_selectedBrand != 'All Brands') {
+                  parts = parts.where((p) => p.carBrand.toLowerCase() == _selectedBrand.toLowerCase()).toList();
+                }
+
+                // 4. Condition Filter
+                if (_selectedCondition != 'All Conditions') {
+                  parts = parts.where((p) {
+                    if (_selectedCondition == 'Brand New') {
+                      return p.condition.toLowerCase().contains('new');
+                    } else {
+                      return !p.condition.toLowerCase().contains('new');
                     }
-                  }
-
-                  // Brand filter
-                  if (_selectedBrand != 'All Brands' && !brand.contains(_selectedBrand.toLowerCase())) {
-                    return false;
-                  }
-
-                  // Category filter
-                  if (_selectedCategory != 'All Categories' && !category.contains(_selectedCategory.toLowerCase())) {
-                    return false;
-                  }
-
-                  // Condition filter
-                  if (_selectedCondition == 'Brand New' && !condition.contains('new')) {
-                    return false;
-                  } else if (_selectedCondition == 'Used' && condition.contains('new')) {
-                    return false;
-                  }
-
-                  return true;
-                }).toList();
-
-                // Sort logic
-                matched.sort((a, b) {
-                  final dataA = a.data() as Map<String, dynamic>;
-                  final dataB = b.data() as Map<String, dynamic>;
-
-                  if (_sortBy == 'price_low') {
-                    final priceA = (dataA['price'] is num ? dataA['price'] : 0) as num;
-                    final priceB = (dataB['price'] is num ? dataB['price'] : 0) as num;
-                    return priceA.compareTo(priceB);
-                  } else if (_sortBy == 'price_high') {
-                    final priceA = (dataA['price'] is num ? dataA['price'] : 0) as num;
-                    final priceB = (dataB['price'] is num ? dataB['price'] : 0) as num;
-                    return priceB.compareTo(priceA);
-                  } else {
-                    // Newest first
-                    final timeA = dataA['createdAt'] ?? 0;
-                    final timeB = dataB['createdAt'] ?? 0;
-                    return (timeB is num ? timeB : 0).compareTo(timeA is num ? timeA : 0);
-                  }
-                });
-
-                // If user hasn't typed anything and no filter applied, show recent searches & trending
-                if (queryText.isEmpty && !hasFilterApplied) {
-                  return ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      // Recent Searches
-                      if (_recentSearches.isNotEmpty) ...[
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Recent Searches', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A))),
-                            GestureDetector(
-                              onTap: _clearRecentSearches,
-                              child: const Text('Clear All', style: TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.w600)),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: _recentSearches.map((s) {
-                            return ActionChip(
-                              avatar: const Icon(Icons.history, size: 16, color: Color(0xFF64748B)),
-                              label: Text(s),
-                              backgroundColor: Colors.white,
-                              side: const BorderSide(color: Color(0xFFE2E8F0)),
-                              onPressed: () {
-                                _searchCtrl.text = s;
-                                setState(() {});
-                              },
-                            );
-                          }).toList(),
-                        ),
-                        const SizedBox(height: 24),
-                      ],
-
-                      // Trending Searches
-                      const Text('Trending Spares & Components', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A))),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: _trendingSuggestions.map((t) {
-                          return ActionChip(
-                            avatar: const Icon(Icons.trending_up, size: 16, color: Color(0xFF0075FF)),
-                            label: Text(t),
-                            backgroundColor: Colors.white,
-                            side: const BorderSide(color: Color(0xFFE2E8F0)),
-                            onPressed: () {
-                              _searchCtrl.text = t;
-                              _saveSearchQuery(t);
-                              setState(() {});
-                            },
-                          );
-                        }).toList(),
-                      ),
-                    ],
-                  );
+                  }).toList();
                 }
 
-                // If no results match
-                if (matched.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle),
-                            child: const Icon(Icons.search_off, size: 48, color: Colors.grey),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            queryText.isNotEmpty ? 'No spare parts found for "$queryText"' : 'No parts match filters',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A)),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 6),
-                          const Text(
-                            'Try checking spelling or removing filters to see more results.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
+                // 5. Sorting
+                if (_sortBy == 'price_low') {
+                  parts.sort((a, b) => a.price.compareTo(b.price));
+                } else if (_sortBy == 'price_high') {
+                  parts.sort((a, b) => b.price.compareTo(a.price));
                 }
 
-                // Results Grid
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
-                      child: Text(
-                        'Found ${matched.length} spare parts',
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
+                if (parts.isEmpty) {
+                  return _buildEmptyState();
+                }
+
+                return CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+                        child: Text(
+                          '${parts.length} Spare ${parts.length == 1 ? 'Part' : 'Parts'} Found',
+                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF64748B)),
+                        ),
                       ),
                     ),
-                    Expanded(
-                      child: GridView.builder(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+                      sliver: SliverGrid(
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
                           childAspectRatio: 0.70,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
                         ),
-                        itemCount: matched.length,
-                        itemBuilder: (context, index) {
-                          return ProductCard(part: SparePart.fromFirestore(matched[index]));
-                        },
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) => ProductCard(part: parts[index]),
+                          childCount: parts.length,
+                        ),
                       ),
                     ),
                   ],
@@ -568,6 +598,38 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.search_off_rounded, size: 48, color: Color(0xFF94A3B8)),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'No Matching Spare Parts',
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17, color: Color(0xFF0F172A)),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Check your spelling or reset filters to see all available auto parts across India.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Color(0xFF64748B), fontSize: 13, height: 1.4),
+            ),
+          ],
+        ),
       ),
     );
   }

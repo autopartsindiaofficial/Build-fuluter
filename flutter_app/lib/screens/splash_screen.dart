@@ -33,6 +33,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+
   late AnimationController _footerController;
   late Animation<double> _footerFade;
 
@@ -58,27 +62,36 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     // 1. Center Brand Logo Entrance Animation
     _fadeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 700),
     );
-    _fadeAnimation = CurvedAnimation(parent: _fadeController, curve: Curves.easeIn);
-    _scaleAnimation = Tween<double>(begin: 0.90, end: 1.0).animate(
+    _fadeAnimation = CurvedAnimation(parent: _fadeController, curve: Curves.easeOutCubic);
+    _scaleAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
       CurvedAnimation(parent: _fadeController, curve: Curves.easeOutBack),
     );
 
-    // 2. Footer Tagline Fade Animation
+    // 2. Glowing pulse around logo
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+    _pulseAnimation = Tween<double>(begin: 0.96, end: 1.05).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    // 3. Footer Tagline Fade Animation
     _footerController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 700),
+      duration: const Duration(milliseconds: 600),
     );
     _footerFade = CurvedAnimation(parent: _footerController, curve: Curves.easeIn);
 
     _fadeController.forward();
-    Future.delayed(const Duration(milliseconds: 250), () {
+    Future.delayed(const Duration(milliseconds: 300), () {
       if (mounted) _footerController.forward();
     });
 
-    // 3. Check App Update & Proceed after brief display
-    _initialTimer = Timer(const Duration(milliseconds: 1400), () {
+    // 4. Check App Update & Proceed after brief display
+    _initialTimer = Timer(const Duration(milliseconds: 1500), () {
       if (mounted) _checkAppUpdate();
     });
   }
@@ -88,6 +101,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     _initialTimer?.cancel();
     _fallbackTimer?.cancel();
     _fadeController.dispose();
+    _pulseController.dispose();
     _footerController.dispose();
     super.dispose();
   }
@@ -162,18 +176,19 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       builder: (ctx) => PopScope(
         canPop: !forceUpdate,
         child: AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Row(
             children: const [
-              Icon(Icons.system_update, color: AppColors.primary),
-              SizedBox(width: 8),
-              Text('Update Required', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              Icon(Icons.system_update_rounded, color: Color(0xFF0075FF), size: 26),
+              SizedBox(width: 10),
+              Text('Update Required', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
             ],
           ),
           content: const Text(
-            'A new version of Auto Parts India is available. Please update to continue using the app.',
-            style: TextStyle(fontSize: 14, color: Color(0xFF475569), height: 1.4),
+            'A new version of Auto Parts India is available with enhanced marketplace features. Please update to continue.',
+            style: TextStyle(fontSize: 14, color: Color(0xFF475569), height: 1.45),
           ),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           actions: [
             if (!forceUpdate)
               TextButton(
@@ -181,13 +196,15 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   Navigator.pop(ctx);
                   _safeProceed();
                 },
-                child: const Text('Later', style: TextStyle(color: Colors.grey)),
+                child: const Text('Later', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
               ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: const Color(0xFF0075FF),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
               ),
               onPressed: () async {
                 if (apkUrl.isNotEmpty) {
@@ -201,7 +218,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   _safeProceed();
                 }
               },
-              child: const Text('Update Now'),
+              child: const Text('Update Now', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -212,89 +229,200 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0075FF),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-          child: Column(
-            children: [
-              const Spacer(),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF0A0F1D), // Ultra Deep Slate Navy
+              Color(0xFF0C1938), // Midnight Blue
+              Color(0xFF0052B4), // Electric Automotive Blue Accent
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            child: Column(
+              children: [
+                const Spacer(flex: 2),
 
-              // Center Brand Emblem & Typography
-              FadeTransition(
-                opacity: _fadeAnimation,
-                child: ScaleTransition(
-                  scale: _scaleAnimation,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 90,
-                        height: 90,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(22),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.18),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
+                // Center Brand Emblem & Typography
+                FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Animated Glow Ring Container
+                        AnimatedBuilder(
+                          animation: _pulseAnimation,
+                          builder: (context, child) {
+                            return Transform.scale(
+                              scale: _pulseAnimation.value,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF0075FF).withOpacity(0.4),
+                                      blurRadius: 36,
+                                      spreadRadius: 8,
+                                    ),
+                                  ],
+                                ),
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: Container(
+                            width: 104,
+                            height: 104,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Colors.white, Color(0xFFF1F5F9)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(28),
+                              border: Border.all(color: Colors.white.withOpacity(0.8), width: 2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.25),
+                                  blurRadius: 24,
+                                  offset: const Offset(0, 12),
+                                ),
+                              ],
                             ),
-                          ],
+                            clipBehavior: Clip.antiAlias,
+                            child: Center(
+                              child: Image.asset(
+                                'assets/app_logo.png',
+                                width: 84,
+                                height: 84,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) => const Icon(
+                                  Icons.directions_car_filled_rounded,
+                                  size: 60,
+                                  color: Color(0xFF0075FF),
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
-                        child: const Center(
-                          child: Icon(Icons.car_repair, size: 52, color: Color(0xFF0075FF)),
+                        const SizedBox(height: 28),
+
+                        // Title with luxury automotive styling
+                        ShaderMask(
+                          shaderCallback: (bounds) => const LinearGradient(
+                            colors: [Colors.white, Color(0xFFE2E8F0)],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ).createShader(bounds),
+                          child: const Text(
+                            'Auto Parts India',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 32,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Micro Pill Tag
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(30),
+                            border: Border.all(color: Colors.white.withOpacity(0.25), width: 1),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(Icons.verified_rounded, color: Color(0xFF38BDF8), size: 14),
+                              SizedBox(width: 6),
+                              Text(
+                                'VERIFIED SPARES MARKETPLACE',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const Spacer(flex: 3),
+
+                // Footer Loading & Tagline
+                FadeTransition(
+                  opacity: _footerFade,
+                  child: Column(
+                    children: [
+                      // Sleek Loader Bar
+                      SizedBox(
+                        width: 44,
+                        height: 3,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(2),
+                          child: const LinearProgressIndicator(
+                            backgroundColor: Color(0xFF1E293B),
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0075FF)),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 20),
-
-                      const Text(
-                        'Auto Parts India',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5,
-                        ),
+                      const SizedBox(height: 18),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF10B981),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'India’s #1 Automobile Parts Network',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.white.withOpacity(0.85),
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 6),
-
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.18),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Text(
-                          'GENUINE AUTOMOBILE SPARES',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.2,
-                          ),
+                      Text(
+                        'v$currentAppVersion • 100% Genuine Guarantee',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.white.withOpacity(0.5),
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-
-              const Spacer(),
-
-              FadeTransition(
-                opacity: _footerFade,
-                child: const Text(
-                  'India’s leading marketplace',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w400,
-                    letterSpacing: 0.2,
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

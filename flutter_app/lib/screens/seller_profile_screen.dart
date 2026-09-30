@@ -30,7 +30,7 @@ class SellerProfileScreen extends StatefulWidget {
 
 class _SellerProfileScreenState extends State<SellerProfileScreen> {
   bool _isFollowing = false;
-  int _followersCount = 14;
+  int _followersCount = 28;
 
   FirebaseFirestore get _db {
     try {
@@ -78,15 +78,21 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: Text(widget.sellerName, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+        title: Text(widget.sellerName, style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF0F172A), fontSize: 18)),
         backgroundColor: Colors.white,
-        elevation: 0.5,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: const Color(0xFFF1F5F9), height: 1),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF0F172A)),
+          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF0F172A)),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 32),
         child: Column(
           children: [
             // 1. Seller Header Profile Card
@@ -100,7 +106,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                     backgroundColor: const Color(0xFF0075FF).withOpacity(0.12),
                     child: Text(
                       widget.sellerName.isNotEmpty ? widget.sellerName[0].toUpperCase() : 'S',
-                      style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Color(0xFF0075FF)),
+                      style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: Color(0xFF0075FF)),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -110,33 +116,33 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                       Flexible(
                         child: Text(
                           widget.sellerName,
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 6),
-                      const Icon(Icons.verified, color: Color(0xFF0075FF), size: 18),
+                      const Icon(Icons.verified_rounded, color: Color(0xFF0075FF), size: 18),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(color: const Color(0xFFDCFCE7), borderRadius: BorderRadius.circular(10)),
-                    child: const Text('VERIFIED AUTO DEALER', style: TextStyle(color: Color(0xFF16A34A), fontSize: 10, fontWeight: FontWeight.w800)),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(color: const Color(0xFFDCFCE7), borderRadius: BorderRadius.circular(12)),
+                    child: const Text('VERIFIED AUTO TRADER', style: TextStyle(color: Color(0xFF16A34A), fontSize: 10, fontWeight: FontWeight.w900)),
                   ),
                   if (widget.location != null && widget.location!.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.location_on, size: 14, color: Color(0xFF64748B)),
+                        const Icon(Icons.location_on_rounded, size: 14, color: Color(0xFF64748B)),
                         const SizedBox(width: 4),
-                        Text(widget.location!, style: const TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500)),
+                        Text(widget.location!, style: const TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ],
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 18),
 
                   // Stats Row
                   Row(
@@ -148,118 +154,121 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                           MaterialPageRoute(builder: (_) => SellerReviewsScreen(sellerId: widget.sellerId, sellerName: widget.sellerName)),
                         );
                       }),
-                      const SizedBox(width: 24),
+                      const SizedBox(width: 28),
                       _buildMetric('Followers', '$_followersCount', () {}),
-                      const SizedBox(width: 24),
+                      const SizedBox(width: 28),
                       _buildMetric('Response', '< 15 mins', () {}),
                     ],
                   ),
 
                   const SizedBox(height: 18),
 
-                  // Actions: Direct Call & In-App Chat (No WhatsApp) & Follow
+                  // Actions: Direct Call & In-App Chat & Follow
                   Row(
                     children: [
-                      // Direct Call Dialer
-                      if (widget.sellerPhone != null && widget.sellerPhone!.isNotEmpty)
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () => _callSeller(context, widget.sellerPhone!),
-                            icon: const Icon(Icons.call, size: 16),
-                            label: const Text('Call', style: TextStyle(fontWeight: FontWeight.bold)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF16A34A),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
+                      // Follow Button
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: _isFollowing ? const Color(0xFF10B981) : const Color(0xFF0075FF)),
+                            foregroundColor: _isFollowing ? const Color(0xFF10B981) : const Color(0xFF0075FF),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
+                          icon: Icon(_isFollowing ? Icons.check_circle_rounded : Icons.person_add_alt_1_rounded, size: 18),
+                          label: Text(_isFollowing ? 'Following' : 'Follow Seller', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          onPressed: _toggleFollow,
                         ),
-                      if (widget.sellerPhone != null && widget.sellerPhone!.isNotEmpty)
-                        const SizedBox(width: 8),
+                      ),
+                      const SizedBox(width: 10),
 
-                      // In-App Chat
+                      // Call Button
+                      if (widget.sellerPhone != null && widget.sellerPhone!.isNotEmpty) ...[
+                        OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Color(0xFF10B981)),
+                            foregroundColor: const Color(0xFF10B981),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          ),
+                          onPressed: () => _callSeller(context, widget.sellerPhone!),
+                          child: const Icon(Icons.call_rounded, size: 20),
+                        ),
+                        const SizedBox(width: 10),
+                      ],
+
+                      // Chat Button
                       Expanded(
                         child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0075FF),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            elevation: 0,
+                          ),
+                          icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+                          label: const Text('Chat with Seller', style: TextStyle(fontWeight: FontWeight.bold)),
                           onPressed: () {
-                            final convoId = '${currentUid}_${widget.sellerId}_general';
+                            final conversationId = '${currentUid}_${widget.sellerId}_general';
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (_) => ChatRoomScreen(
-                                  conversationId: convoId,
-                                  partTitle: 'Direct Inquiries',
+                                  conversationId: conversationId,
+                                  partTitle: 'Direct Seller Inquiry',
                                   sellerName: widget.sellerName,
                                 ),
                               ),
                             );
                           },
-                          icon: const Icon(Icons.chat_bubble_outline, size: 16),
-                          label: const Text('Chat', style: TextStyle(fontWeight: FontWeight.bold)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF0075FF),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-
-                      // Follow / Unfollow
-                      OutlinedButton(
-                        onPressed: _toggleFollow,
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: _isFollowing ? Colors.grey : const Color(0xFF0075FF)),
-                          foregroundColor: _isFollowing ? Colors.grey.shade700 : const Color(0xFF0075FF),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        child: Text(_isFollowing ? 'Following' : '+ Follow', style: const TextStyle(fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-
             const SizedBox(height: 12),
 
-            // 2. Seller's Listed Parts Feed
+            // 2. Active Listings Header
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text("Parts by ${widget.sellerName}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A))),
+                  Container(width: 4, height: 16, decoration: BoxDecoration(color: const Color(0xFF0075FF), borderRadius: BorderRadius.circular(2))),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Spare Parts by ${widget.sellerName}',
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF0F172A)),
+                  ),
                 ],
               ),
             ),
 
+            // 3. Seller's Listings Stream
             StreamBuilder<QuerySnapshot>(
-              stream: _db.collection('spareParts').snapshots(),
+              stream: _db.collection('spareParts').where('sellerId', isEqualTo: widget.sellerId).snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator(color: Color(0xFF0075FF))));
+                  return const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator(color: Color(0xFF0075FF))));
                 }
 
-                final allDocs = snapshot.data?.docs ?? [];
-                final sellerParts = allDocs.where((doc) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  final sId = (data['sellerId'] ?? data['userId'] ?? '').toString();
-                  final sName = (data['contactName'] ?? data['sellerName'] ?? '').toString();
-                  return sId == widget.sellerId || (widget.sellerName.isNotEmpty && sName.toLowerCase() == widget.sellerName.toLowerCase());
-                }).map((d) => SparePart.fromFirestore(d)).toList();
+                final docs = snapshot.data?.docs ?? [];
 
-                if (sellerParts.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32.0),
+                if (docs.isEmpty) {
+                  return Container(
+                    margin: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+                    child: Center(
                       child: Column(
                         children: const [
-                          Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey),
+                          Icon(Icons.inventory_2_outlined, size: 40, color: Color(0xFF94A3B8)),
                           SizedBox(height: 8),
-                          Text('No active listings found for this seller.', style: TextStyle(color: Colors.grey)),
+                          Text('No Active Listings Currently', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                          SizedBox(height: 4),
+                          Text('This trader has not posted any active auto parts right now.', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
                         ],
                       ),
                     ),
@@ -269,60 +278,62 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                 return GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     childAspectRatio: 0.70,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                   ),
-                  itemCount: sellerParts.length,
+                  itemCount: docs.length,
                   itemBuilder: (context, index) {
-                    final part = sellerParts[index];
+                    final part = SparePart.fromFirestore(docs[index]);
                     return GestureDetector(
                       onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => ProductDetailScreen(part: part)));
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => ProductDetailScreen(part: part)),
+                        );
                       },
                       child: Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: const Color(0xFFE2E8F0)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             ClipRRect(
-                              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                               child: CachedNetworkImage(
                                 imageUrl: part.imageUrl,
                                 height: 110,
                                 width: double.infinity,
                                 fit: BoxFit.cover,
-                                errorWidget: (_, __, ___) => Container(height: 110, color: Colors.grey.shade200),
+                                errorWidget: (_, __, ___) => Container(height: 110, color: const Color(0xFFF1F5F9)),
                               ),
                             ),
                             Padding(
-                              padding: const EdgeInsets.all(8.0),
+                              padding: const EdgeInsets.all(10),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     currencyFormatter.format(part.price),
-                                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF0075FF)),
+                                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: Color(0xFF0075FF)),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     part.title,
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Color(0xFF0F172A)),
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     part.location,
-                                    style: const TextStyle(fontSize: 10, color: Colors.grey),
-                                    maxLines: 1,
+                                    style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
                                   ),
                                 ],
                               ),
@@ -335,7 +346,6 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                 );
               },
             ),
-            const SizedBox(height: 30),
           ],
         ),
       ),
@@ -343,13 +353,13 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
   }
 
   Widget _buildMetric(String label, String value, VoidCallback onTap) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
       child: Column(
         children: [
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A))),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF0F172A))),
           const SizedBox(height: 2),
-          Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
+          Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
         ],
       ),
     );
