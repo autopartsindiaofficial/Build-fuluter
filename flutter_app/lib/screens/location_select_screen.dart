@@ -362,7 +362,7 @@ class _LocationSelectScreenState extends State<LocationSelectScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 16, 8),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.between,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
                     child: Text(
