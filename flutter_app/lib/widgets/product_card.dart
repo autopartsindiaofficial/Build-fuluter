@@ -83,9 +83,11 @@ class ProductCard extends StatelessWidget {
                     top: 8,
                     left: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.75),
+                        color: part.condition.toLowerCase().contains('new')
+                            ? const Color(0xFF0075FF)
+                            : const Color(0xFFEF4444),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -93,7 +95,7 @@ class ProductCard extends StatelessWidget {
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 9,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w800,
                           letterSpacing: 0.3,
                         ),
                       ),

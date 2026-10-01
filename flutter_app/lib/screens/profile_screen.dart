@@ -15,7 +15,8 @@ import 'admin_dashboard_screen.dart';
 import 'admin_taxonomy_screen.dart';
 import 'help_support_screen.dart';
 import 'recently_viewed_screen.dart';
-import 'settings_screen.dart';
+import '../widgets/settings_screen.dart';
+import '../widgets/profile_avatar.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -170,33 +171,13 @@ class ProfileScreen extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      // Avatar
+                      // Avatar with tap-to-zoom round preview
                       Stack(
                         children: [
-                          Container(
-                            width: 72,
-                            height: 72,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF0075FF), Color(0xFF0052B4)],
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF0075FF).withOpacity(0.24),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            clipBehavior: Clip.antiAlias,
-                            child: (user?.photoURL != null && user!.photoURL!.isNotEmpty)
-                                ? CachedNetworkImage(
-                                    imageUrl: user.photoURL!,
-                                    fit: BoxFit.cover,
-                                    errorWidget: (_, __, ___) => const Icon(Icons.person_rounded, size: 40, color: Colors.white),
-                                  )
-                                : const Center(child: Icon(Icons.person_rounded, size: 40, color: Colors.white)),
+                          ProfileAvatar(
+                            photoUrl: auth.userProfile?.photoURL ?? user?.photoURL,
+                            name: auth.userProfile?.displayName ?? user?.displayName ?? 'Auto Enthusiast',
+                            radius: 36,
                           ),
                           if (isAdmin)
                             Positioned(

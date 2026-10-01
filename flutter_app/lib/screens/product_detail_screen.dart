@@ -429,16 +429,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: widget.part.condition.toLowerCase().contains('new')
-                              ? const Color(0xFFDCFCE7)
-                              : const Color(0xFFFEF3C7),
+                              ? const Color(0xFFEFF6FF)
+                              : const Color(0xFFFEF2F2),
                           borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: widget.part.condition.toLowerCase().contains('new')
+                                ? const Color(0xFF0075FF).withOpacity(0.3)
+                                : const Color(0xFFEF4444).withOpacity(0.3),
+                          ),
                         ),
                         child: Text(
                           widget.part.condition.toLowerCase().contains('new') ? '✨ BRAND NEW' : 'GENTLY USED',
                           style: TextStyle(
                             color: widget.part.condition.toLowerCase().contains('new')
-                                ? const Color(0xFF16A34A)
-                                : const Color(0xFFD97706),
+                                ? const Color(0xFF0075FF)
+                                : const Color(0xFFEF4444),
                             fontWeight: FontWeight.w900,
                             fontSize: 11,
                           ),
