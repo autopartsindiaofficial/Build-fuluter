@@ -15,7 +15,7 @@ import 'admin_dashboard_screen.dart';
 import 'admin_taxonomy_screen.dart';
 import 'help_support_screen.dart';
 import 'recently_viewed_screen.dart';
-import '../widgets/settings_screen.dart';
+import 'settings_screen.dart';
 import '../widgets/profile_avatar.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -154,7 +154,7 @@ class ProfileScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.settings_outlined, color: Color(0xFF0F172A)),
             onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+              Navigator.push(context, MaterialPageRoute(builder: (_) => SettingsScreen()));
             },
           ),
         ],
@@ -472,7 +472,7 @@ class ProfileScreen extends StatelessWidget {
                     iconColor: const Color(0xFF64748B),
                     title: 'App Settings',
                     subtitle: 'Notifications, sounds & storage',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SettingsScreen())),
                   ),
                 ],
               ),

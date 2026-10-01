@@ -260,7 +260,6 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                                           conversationId: conversationId,
                                           partTitle: 'Direct Seller Inquiry',
                                           sellerName: widget.sellerName,
-                                          sellerId: widget.sellerId,
                                         ),
                                       ),
                                     );
