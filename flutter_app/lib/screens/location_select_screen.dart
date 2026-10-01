@@ -20,6 +20,7 @@ class _LocationSelectScreenState extends State<LocationSelectScreen> {
   final TextEditingController _searchController = TextEditingController();
   bool _isDetectingGPS = false;
   List<StateWithDistricts> _allStates = [];
+  String? _selectedStateForDistricts; // For viewing state districts subview
 
   FirebaseFirestore get _db {
     try {
@@ -111,11 +112,9 @@ class _LocationSelectScreenState extends State<LocationSelectScreen> {
     }
   }
 
-  // Real GPS & Reverse Geocoding Auto-Detection
   Future<void> _autoDetectGPSLocation() async {
     setState(() => _isDetectingGPS = true);
     try {
-      // 1. Fetch IP & network-assisted geolocation
       final response = await http.get(
         Uri.parse('https://ipapi.co/json/'),
       ).timeout(const Duration(seconds: 6));
@@ -132,16 +131,9 @@ class _LocationSelectScreenState extends State<LocationSelectScreen> {
         }
       }
 
-      // Fallback: Default to Chennai if location cannot be queried
       await _selectLocation('Chennai', state: 'Tamil Nadu', district: 'Chennai');
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Auto-detect: Selected Chennai. You can also pick your city manually.'),
-            backgroundColor: Color(0xFF0075FF),
-          ),
-        );
         await _selectLocation('Chennai', state: 'Tamil Nadu', district: 'Chennai');
       }
     } finally {
@@ -165,7 +157,7 @@ class _LocationSelectScreenState extends State<LocationSelectScreen> {
   Widget build(BuildContext context) {
     final query = _searchController.text.trim().toLowerCase();
 
-    // Filter results if searching
+    // Filter search matches
     List<Map<String, String>> searchMatches = [];
     if (query.isNotEmpty) {
       for (var st in _allStates) {
@@ -181,51 +173,95 @@ class _LocationSelectScreenState extends State<LocationSelectScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Select Location', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         backgroundColor: Colors.white,
-        elevation: 0.5,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        leading: IconButton(
+          icon: const Icon(Icons.close_rounded, color: Color(0xFF0F172A), size: 24),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Location',
+          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: Color(0xFF0F172A)),
+        ),
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Search Box
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          // Search Input Bar
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
             child: TextField(
               controller: _searchController,
               onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
-                hintText: 'Search city, state or district...',
-                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                prefixIcon: const Icon(Icons.search, color: Color(0xFF0075FF)),
+                hintText: 'Search city, area or neighbourhood',
+                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14, fontWeight: FontWeight.w400),
+                prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF64748B), size: 20),
                 suffixIcon: query.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear, size: 20),
+                        icon: const Icon(Icons.clear_rounded, size: 18),
                         onPressed: () => setState(() => _searchController.clear()),
                       )
                     : null,
                 filled: true,
-                fillColor: const Color(0xFFF8FAFC),
+                fillColor: Colors.white,
                 contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade200),
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade200),
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                   borderSide: const BorderSide(color: Color(0xFF0075FF), width: 1.5),
                 ),
               ),
             ),
           ),
 
-          // Main Body: Search Results or Default Sections
+          // Use Current Location Button Row
+          InkWell(
+            onTap: _isDetectingGPS ? null : _autoDetectGPSLocation,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              child: Row(
+                children: [
+                  const Icon(Icons.my_location_rounded, color: Color(0xFF0075FF), size: 22),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _isDetectingGPS ? 'Detecting your location...' : 'Use current location',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            color: Color(0xFF0075FF),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        const Text(
+                          'India',
+                          style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
+
+          // Main Body: Search Results or States List
           Expanded(
             child: query.isNotEmpty
                 ? searchMatches.isEmpty
@@ -233,7 +269,7 @@ class _LocationSelectScreenState extends State<LocationSelectScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.location_off, size: 48, color: Colors.grey.shade400),
+                            Icon(Icons.location_off_rounded, size: 48, color: Colors.grey.shade400),
                             const SizedBox(height: 12),
                             Text('No locations found for "$query"', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF334155))),
                             const SizedBox(height: 4),
@@ -242,189 +278,135 @@ class _LocationSelectScreenState extends State<LocationSelectScreen> {
                         ),
                       )
                     : ListView.separated(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
                         itemCount: searchMatches.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        separatorBuilder: (_, __) => Divider(height: 1, color: Colors.grey.shade100),
                         itemBuilder: (context, index) {
                           final item = searchMatches[index];
                           return ListTile(
-                            tileColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            leading: const Icon(Icons.location_on, color: Color(0xFF0075FF)),
-                            title: Text(item['title']!, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                            title: Text(item['title']!, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF0F172A))),
                             subtitle: Text(item['subtitle']!, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                            trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+                            trailing: const Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFF94A3B8)),
                             onTap: () {
                               _selectLocation(item['title']!, state: item['state'], district: item['district']);
                             },
                           );
                         },
                       )
-                : ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      // 1. Auto-Detect GPS Location Button
-                      Material(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        elevation: 1,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(14),
-                          onTap: _isDetectingGPS ? null : _autoDetectGPSLocation,
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
+                    : ListView(
+                        padding: EdgeInsets.zero,
+                        children: [
+                          // Choose State Header
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                            child: Text(
+                              'CHOOSE STATE',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.grey.shade600,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ),
+
+                          // All in India
+                          ListTile(
+                            title: const Text(
+                              'All in India',
+                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: Color(0xFF0075FF)),
+                            ),
+                            onTap: () => _selectLocation('All India'),
+                          ),
+                          Divider(height: 1, color: Colors.grey.shade100),
+
+                          // States List
+                          ..._allStates.map((st) {
+                            return Column(
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF0075FF).withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(12),
+                                ListTile(
+                                  title: Text(
+                                    st.state,
+                                    style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15, color: Color(0xFF0F172A)),
                                   ),
-                                  child: _isDetectingGPS
-                                      ? const SizedBox(
-                                          width: 24,
-                                          height: 24,
-                                          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0075FF)),
-                                        )
-                                      : const Icon(Icons.my_location, color: Color(0xFF0075FF), size: 24),
+                                  trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: Color(0xFF94A3B8)),
+                                  onTap: () {
+                                    // Show districts dialog or select state
+                                    _showDistrictsDialog(st);
+                                  },
                                 ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        _isDetectingGPS ? 'Detecting your location...' : 'Use Current Location',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 15,
-                                          color: Color(0xFF0075FF),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      const Text(
-                                        'Using GPS & Network Auto-Detection',
-                                        style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const Icon(Icons.chevron_right, color: Color(0xFF0075FF)),
+                                Divider(height: 1, color: Colors.grey.shade100),
                               ],
-                            ),
-                          ),
-                        ),
+                            );
+                          }),
+                        ],
                       ),
-                      const SizedBox(height: 16),
-
-                      // 2. All India Option
-                      Material(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        child: ListTile(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            side: BorderSide(
-                              color: _currentLocation == 'All India' ? const Color(0xFF0075FF) : Colors.grey.shade200,
-                              width: _currentLocation == 'All India' ? 2 : 1,
-                            ),
-                          ),
-                          leading: const Icon(Icons.public, color: Color(0xFF0075FF)),
-                          title: const Text('All India (All Locations)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                          trailing: _currentLocation == 'All India'
-                              ? const Icon(Icons.check_circle, color: Color(0xFF16A34A))
-                              : null,
-                          onTap: () {
-                            _selectLocation('All India');
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // 3. Popular Cities
-                      const Text(
-                        'Popular Cities',
-                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: Color(0xFF0F172A)),
-                      ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: kPopularIndianCities.map((city) {
-                          final isSelected = _currentLocation.toLowerCase() == city.toLowerCase();
-                          return ChoiceChip(
-                            label: Text(city),
-                            selected: isSelected,
-                            selectedColor: const Color(0xFF0075FF),
-                            labelStyle: TextStyle(
-                              color: isSelected ? Colors.white : const Color(0xFF334155),
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                              fontSize: 13,
-                            ),
-                            backgroundColor: Colors.white,
-                            side: BorderSide(
-                              color: isSelected ? const Color(0xFF0075FF) : Colors.grey.shade300,
-                            ),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                            onSelected: (_) {
-                              _selectLocation(city);
-                            },
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // 4. Browse by State & Districts (All 28 States & 8 Union Territories)
-                      const Text(
-                        'All States & Districts of India',
-                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: Color(0xFF0F172A)),
-                      ),
-                      const SizedBox(height: 10),
-                      ..._allStates.map((st) {
-                        return Card(
-                          elevation: 0,
-                          margin: const EdgeInsets.only(bottom: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(color: Colors.grey.shade200),
-                          ),
-                          child: ExpansionTile(
-                            leading: const Icon(Icons.location_city, color: Color(0xFF0075FF), size: 22),
-                            title: Text(
-                              st.state,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B)),
-                            ),
-                            subtitle: Text(
-                              '${st.districts.length} Districts',
-                              style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                            ),
-                            children: st.districts.map((district) {
-                              final isSelected = _currentLocation.toLowerCase() == district.toLowerCase();
-                              return ListTile(
-                                dense: true,
-                                title: Text(
-                                  district,
-                                  style: TextStyle(
-                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                    color: isSelected ? const Color(0xFF0075FF) : const Color(0xFF334155),
-                                  ),
-                                ),
-                                trailing: isSelected
-                                    ? const Icon(Icons.check, color: Color(0xFF0075FF), size: 18)
-                                    : const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
-                                onTap: () {
-                                  _selectLocation(district, state: st.state, district: district);
-                                },
-                              );
-                            }).toList(),
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showDistrictsDialog(StateWithDistricts st) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        maxChildSize: 0.9,
+        minChildSize: 0.4,
+        expand: false,
+        builder: (_, scrollController) => Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 16, 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.between,
+                children: [
+                  Expanded(
+                    child: Text(
+                      st.state,
+                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Color(0xFF0F172A)),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              title: Text('Entire ${st.state}', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0075FF))),
+              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+              onTap: () {
+                Navigator.pop(ctx);
+                _selectLocation(st.state, state: st.state);
+              },
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: ListView.separated(
+                controller: scrollController,
+                itemCount: st.districts.length,
+                separatorBuilder: (_, __) => Divider(height: 1, color: Colors.grey.shade100),
+                itemBuilder: (context, index) {
+                  final district = st.districts[index];
+                  return ListTile(
+                    title: Text(district, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+                    trailing: const Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFF94A3B8)),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _selectLocation(district, state: st.state, district: district);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

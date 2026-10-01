@@ -66,14 +66,27 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   void _callPhone(String phone) async {
-    final Uri uri = Uri.parse('tel:$phone');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Unable to open phone dialer.')),
-        );
+    final cleanPhone = phone.replaceAll(RegExp(r'[^\d+]'), '');
+    final Uri uri = Uri.parse('tel:$cleanPhone');
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        await launchUrl(uri);
+      }
+    } catch (_) {
+      try {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Unable to open phone dialer. Please check call permissions.'),
+              backgroundColor: Color(0xFFEF4444),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
     }
   }
@@ -687,34 +700,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
             const SizedBox(height: 8),
 
-            // 6. Safety Tips Card (OLX Marketplace Standard)
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFBFDBFE), width: 1.2),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: const [
-                      Icon(Icons.shield_rounded, color: Color(0xFF0075FF), size: 20),
-                      SizedBox(width: 8),
-                      Text('Safety Tips for Auto Parts Buyers', style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF1E3A8A), fontSize: 13)),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  const Text('• Meet the seller at a safe mechanic garage or public workshop.', style: TextStyle(fontSize: 12, color: Color(0xFF334155), height: 1.45)),
-                  const Text('• Inspect the part number and fitment compatibility before paying.', style: TextStyle(fontSize: 12, color: Color(0xFF334155), height: 1.45)),
-                  const Text('• Never send advance courier fee to unverified callers.', style: TextStyle(fontSize: 12, color: Color(0xFF334155), height: 1.45)),
-                ],
-              ),
-            ),
-
-            // 7. Similar Parts (Matching Brand)
+            // 6. Similar Parts (Matching Brand)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: Row(
@@ -822,9 +808,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ),
       ),
 
-      // 8. Bottom Action Bar (Direct Call, Make Offer, Chat with Seller OR Owner Edit/Delete)
-      bottomSheet: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      // Bottom Action Bar (Direct Call, Make Offer, Chat with Seller OR Owner Edit/Delete)
+      bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           boxShadow: [
@@ -839,123 +824,128 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
         ),
         child: SafeArea(
-          child: isOwner
-              // Owner Controls
-              ? Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
-                          foregroundColor: const Color(0xFFEF4444),
-                          padding: const EdgeInsets.symmetric(vertical: 13),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        ),
-                        icon: const Icon(Icons.delete_outline_rounded),
-                        label: const Text('Delete Ad', style: TextStyle(fontWeight: FontWeight.w800)),
-                        onPressed: _handleDeleteAd,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0075FF),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 13),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          elevation: 0,
-                        ),
-                        icon: const Icon(Icons.edit_rounded),
-                        label: const Text('Edit Listing', style: TextStyle(fontWeight: FontWeight.w800)),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => EditListingScreen(part: widget.part)),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                )
-              // Buyer Controls (Direct Call, Make Offer, Chat)
-              : Row(
-                  children: [
-                    // Direct Call Phone Dialer
-                    if (widget.part.contactPhone != null && widget.part.contactPhone!.isNotEmpty)
-                      Container(
-                        margin: const EdgeInsets.only(right: 8),
-                        child: OutlinedButton(
+          top: false,
+          bottom: true,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: isOwner
+                // Owner Controls
+                ? Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Color(0xFF10B981), width: 1.5),
-                            foregroundColor: const Color(0xFF10B981),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                            side: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+                            foregroundColor: const Color(0xFFEF4444),
+                            padding: const EdgeInsets.symmetric(vertical: 13),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                           ),
-                          onPressed: () => _callPhone(widget.part.contactPhone!),
-                          child: const Icon(Icons.call_rounded, size: 20),
+                          icon: const Icon(Icons.delete_outline_rounded),
+                          label: const Text('Delete Ad', style: TextStyle(fontWeight: FontWeight.w800)),
+                          onPressed: _handleDeleteAd,
                         ),
                       ),
-
-                    // Make Offer Button
-                    Expanded(
-                      flex: 1,
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFF0075FF), width: 1.5),
-                          foregroundColor: const Color(0xFF0075FF),
-                          padding: const EdgeInsets.symmetric(vertical: 13),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0075FF),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            elevation: 0,
+                          ),
+                          icon: const Icon(Icons.edit_rounded),
+                          label: const Text('Edit Listing', style: TextStyle(fontWeight: FontWeight.w800)),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => EditListingScreen(part: widget.part)),
+                            );
+                          },
                         ),
-                        icon: const Icon(Icons.local_offer_outlined, size: 18),
-                        label: const Text('Make Offer', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
-                        onPressed: () {
-                          final currentUid = currentUser?.uid ?? 'guest_buyer';
-                          final currentName = currentUser?.displayName ?? 'Buyer';
-                          showDialog(
-                            context: context,
-                            builder: (_) => MakeOfferDialog(
-                              part: widget.part,
-                              currentUserId: currentUid,
-                              currentUserName: currentName,
+                      ),
+                    ],
+                  )
+                // Buyer Controls (Direct Call, Make Offer, Chat)
+                : Row(
+                    children: [
+                      // Direct Call Phone Dialer
+                      if (widget.part.contactPhone != null && widget.part.contactPhone!.isNotEmpty)
+                        Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Color(0xFF10B981), width: 1.5),
+                              foregroundColor: const Color(0xFF10B981),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                             ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-
-                    // Chat with Seller Button
-                    Expanded(
-                      flex: 1,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0075FF),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 13),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          elevation: 0,
+                            onPressed: () => _callPhone(widget.part.contactPhone!),
+                            child: const Icon(Icons.call_rounded, size: 20),
+                          ),
                         ),
-                        icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
-                        label: const Text('Chat', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
-                        onPressed: () {
-                          final currentUid = currentUser?.uid ?? 'guest_buyer';
-                          final conversationId = '${currentUid}_${widget.part.sellerId}_${widget.part.id}';
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ChatRoomScreen(
-                                conversationId: conversationId,
-                                partTitle: widget.part.title,
-                                sellerName: widget.part.contactName ?? 'Seller',
+
+                      // Make Offer Button
+                      Expanded(
+                        flex: 1,
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Color(0xFF0075FF), width: 1.5),
+                            foregroundColor: const Color(0xFF0075FF),
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                          icon: const Icon(Icons.local_offer_outlined, size: 18),
+                          label: const Text('Make Offer', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                          onPressed: () {
+                            final currentUid = currentUser?.uid ?? 'guest_buyer';
+                            final currentName = currentUser?.displayName ?? 'Buyer';
+                            showDialog(
+                              context: context,
+                              builder: (_) => MakeOfferDialog(
+                                part: widget.part,
+                                currentUserId: currentUid,
+                                currentUserName: currentName,
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                      const SizedBox(width: 8),
+
+                      // Chat with Seller Button
+                      Expanded(
+                        flex: 1,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0075FF),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            elevation: 0,
+                          ),
+                          icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+                          label: const Text('Chat', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                          onPressed: () {
+                            final currentUid = currentUser?.uid ?? 'guest_buyer';
+                            final conversationId = '${currentUid}_${widget.part.sellerId}_${widget.part.id}';
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ChatRoomScreen(
+                                  conversationId: conversationId,
+                                  partTitle: widget.part.title,
+                                  sellerName: widget.part.contactName ?? 'Seller',
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
         ),
       ),
     );

@@ -166,6 +166,29 @@ class _SellPartScreenState extends State<SellPartScreen> {
 
   Future<void> _pickImage(ImageSource source) async {
     try {
+      if (source == ImageSource.gallery) {
+        final List<XFile> pickedList = await _picker.pickMultiImage(imageQuality: 80);
+        if (pickedList.isNotEmpty) {
+          setState(() {
+            for (final f in pickedList) {
+              _selectedFiles.add(File(f.path));
+            }
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('📸 ${pickedList.length} photo(s) added to listing!'),
+                backgroundColor: const Color(0xFF10B981),
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 1),
+              ),
+            );
+          }
+          return;
+        }
+      }
+
       final picked = await _picker.pickImage(source: source, imageQuality: 80);
       if (picked != null) {
         setState(() {
@@ -185,6 +208,15 @@ class _SellPartScreenState extends State<SellPartScreen> {
       }
     } catch (e) {
       debugPrint('Error picking image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please allow Camera & Photo permissions in Android Settings to select images.'),
+            backgroundColor: Color(0xFFEF4444),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
@@ -505,8 +537,11 @@ class _SellPartScreenState extends State<SellPartScreen> {
               // Car Brand Dropdown
               DropdownButtonFormField<String>(
                 value: _selectedBrand,
+                isExpanded: true,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF64748B), size: 24),
                 decoration: _inputDecoration('Car Brand *', Icons.directions_car_rounded),
-                items: _brandModels.keys.map((b) => DropdownMenuItem(value: b, child: Text(b))).toList(),
+                items: _brandModels.keys.map((b) => DropdownMenuItem(value: b, child: Text(b, overflow: TextOverflow.ellipsis))).toList(),
                 onChanged: (val) {
                   if (val != null) {
                     setState(() {
@@ -522,8 +557,11 @@ class _SellPartScreenState extends State<SellPartScreen> {
               // Car Model Dropdown (Cascading)
               DropdownButtonFormField<String>(
                 value: _selectedModel,
+                isExpanded: true,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF64748B), size: 24),
                 decoration: _inputDecoration('Car Model *', Icons.car_repair_rounded),
-                items: _brandModels[_selectedBrand]!.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
+                items: _brandModels[_selectedBrand]!.map((m) => DropdownMenuItem(value: m, child: Text(m, overflow: TextOverflow.ellipsis))).toList(),
                 onChanged: (val) {
                   if (val != null) {
                     setState(() {
@@ -541,8 +579,11 @@ class _SellPartScreenState extends State<SellPartScreen> {
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       value: _selectedFuelType,
+                      isExpanded: true,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                      icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF64748B), size: 24),
                       decoration: _inputDecoration('Fuel Type', Icons.local_gas_station_rounded),
-                      items: _fuelTypes.map((f) => DropdownMenuItem(value: f, child: Text(f))).toList(),
+                      items: _fuelTypes.map((f) => DropdownMenuItem(value: f, child: Text(f, overflow: TextOverflow.ellipsis))).toList(),
                       onChanged: (val) {
                         if (val != null) setState(() => _selectedFuelType = val);
                       },
@@ -552,8 +593,11 @@ class _SellPartScreenState extends State<SellPartScreen> {
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       value: _selectedYear,
+                      isExpanded: true,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                      icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF64748B), size: 24),
                       decoration: _inputDecoration('Year', Icons.calendar_today_rounded),
-                      items: _years.map((y) => DropdownMenuItem(value: y, child: Text(y))).toList(),
+                      items: _years.map((y) => DropdownMenuItem(value: y, child: Text(y, overflow: TextOverflow.ellipsis))).toList(),
                       onChanged: (val) {
                         if (val != null) {
                           setState(() {
@@ -575,8 +619,11 @@ class _SellPartScreenState extends State<SellPartScreen> {
 
               DropdownButtonFormField<String>(
                 value: _selectedCategory,
+                isExpanded: true,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF64748B), size: 24),
                 decoration: _inputDecoration('Category *', Icons.category_rounded),
-                items: _categories.keys.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                items: _categories.keys.map((c) => DropdownMenuItem(value: c, child: Text(c, overflow: TextOverflow.ellipsis))).toList(),
                 onChanged: (val) {
                   if (val != null) {
                     setState(() {
@@ -591,8 +638,11 @@ class _SellPartScreenState extends State<SellPartScreen> {
 
               DropdownButtonFormField<String>(
                 value: _selectedSubcategory,
+                isExpanded: true,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF64748B), size: 24),
                 decoration: _inputDecoration('Subcategory *', Icons.subdirectory_arrow_right_rounded),
-                items: _categories[_selectedCategory]!.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                items: _categories[_selectedCategory]!.map((s) => DropdownMenuItem(value: s, child: Text(s, overflow: TextOverflow.ellipsis))).toList(),
                 onChanged: (val) {
                   if (val != null) {
                     setState(() {
@@ -627,8 +677,11 @@ class _SellPartScreenState extends State<SellPartScreen> {
 
               DropdownButtonFormField<String>(
                 value: _selectedCondition,
+                isExpanded: true,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF64748B), size: 24),
                 decoration: _inputDecoration('Condition *', Icons.verified_rounded),
-                items: _conditions.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                items: _conditions.map((c) => DropdownMenuItem(value: c, child: Text(c, overflow: TextOverflow.ellipsis))).toList(),
                 onChanged: (val) {
                   if (val != null) setState(() => _selectedCondition = val);
                 },
@@ -791,11 +844,13 @@ class _SellPartScreenState extends State<SellPartScreen> {
   InputDecoration _inputDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+      floatingLabelBehavior: FloatingLabelBehavior.always,
+      labelStyle: const TextStyle(fontSize: 13, color: Color(0xFF475569), fontWeight: FontWeight.w700),
       prefixIcon: Icon(icon, color: const Color(0xFF0075FF), size: 20),
       filled: true,
       fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      isDense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
       focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF0075FF), width: 1.5)),

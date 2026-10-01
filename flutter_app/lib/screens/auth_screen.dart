@@ -194,12 +194,12 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          // 1. Center Brand Logo Card
+                          // 1. Center Automotive Icon Emblem
                           Container(
                             width: 88,
                             height: 88,
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: const Color(0xFF0075FF),
                               borderRadius: BorderRadius.circular(24),
                               boxShadow: [
                                 BoxShadow(
@@ -209,18 +209,11 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                                 ),
                               ],
                             ),
-                            clipBehavior: Clip.antiAlias,
-                            child: Center(
-                              child: Image.asset(
-                                'assets/app_logo.png',
-                                width: 72,
-                                height: 72,
-                                fit: BoxFit.contain,
-                                errorBuilder: (_, __, ___) => const Icon(
-                                  Icons.directions_car_filled_rounded,
-                                  size: 52,
-                                  color: Color(0xFF0075FF),
-                                ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.directions_car_filled_rounded,
+                                size: 48,
+                                color: Colors.white,
                               ),
                             ),
                           ),

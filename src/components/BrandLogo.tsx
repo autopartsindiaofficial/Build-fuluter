@@ -65,37 +65,23 @@ export function AutoPartsRoundLogo({
   border?: boolean;
   bgColor?: string;
 }) {
-  const [imgError, setImgError] = React.useState(false);
-
   return (
     <div
-      className={`rounded-2xl flex items-center justify-center shrink-0 overflow-hidden shadow-md select-none bg-white p-1 ${
+      className={`rounded-2xl flex items-center justify-center shrink-0 overflow-hidden shadow-md select-none ${
         border ? 'ring-2 ring-white/60' : ''
       } ${className}`}
       style={{
         width: size,
         height: size,
+        backgroundColor: bgColor,
       }}
     >
-      {!imgError ? (
-        <img
-          src="/brand_logo.png"
-          alt="Auto Parts Brand Logo"
-          className="w-full h-full object-contain pointer-events-none"
-          onError={() => setImgError(true)}
-        />
-      ) : (
-        <svg width={size * 0.88} height={size * 0.88} viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-          <g transform="translate(0, -10)">
-            <circle cx="100" cy="75" r="32" stroke="#0075FF" strokeWidth="8" fill="none" />
-            <circle cx="100" cy="75" r="12" stroke="#0075FF" strokeWidth="4" fill="none" />
-            <path
-              d="M60,92 C63,78 68,70 100,70 C132,70 137,78 140,92 C150,95 156,100 156,110 C156,121 148,123 138,123 L62,123 C52,123 44,121 44,110 C44,100 50,95 60,92 Z"
-              fill="#0075FF"
-            />
-          </g>
-        </svg>
-      )}
+      <svg width={size * 0.65} height={size * 0.65} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C2.1 10.7 2 11.2 2 11.7V16c0 .6.4 1 1 1h2" />
+        <circle cx="7" cy="17" r="2" />
+        <path d="M9 17h6" />
+        <circle cx="17" cy="17" r="2" />
+      </svg>
     </div>
   );
 }

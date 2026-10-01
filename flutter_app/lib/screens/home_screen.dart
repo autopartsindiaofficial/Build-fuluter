@@ -14,6 +14,7 @@ import 'notifications_screen.dart';
 import 'location_select_screen.dart';
 import 'all_categories_screen.dart';
 import 'sell_part_screen.dart';
+import 'nearby_map_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -31,76 +32,6 @@ class _HomeScreenState extends State<HomeScreen> {
   late final Stream<QuerySnapshot> _bannersStream;
   late final Stream<QuerySnapshot> _categoriesStream;
   late final Stream<QuerySnapshot> _brandsStream;
-
-  // Default Fallback Banners
-  final List<Map<String, dynamic>> _defaultBanners = [
-    {
-      'title': 'UP TO 50% OFF',
-      'subtitle': 'ON GENUINE AUTO SPARE PARTS',
-      'tag': 'MEGA SAVINGS',
-      'imageUrl': 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?auto=format&fit=crop&w=800&q=80',
-      'targetCategory': 'All',
-    },
-    {
-      'title': 'TURBOCHARGERS & ENGINES',
-      'subtitle': 'Precision Balanced OEM Grade Parts',
-      'tag': 'HIGH PERFORMANCE',
-      'imageUrl': 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=800&q=80',
-      'targetCategory': 'Engine & Mechanical',
-    },
-    {
-      'title': 'BRAKE PADS & ROTORS',
-      'subtitle': 'Ceramic Friction • Maximum Safety',
-      'tag': 'SAFETY ESSENTIALS',
-      'imageUrl': 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&w=800&q=80',
-      'targetCategory': 'Suspension & Brakes',
-    },
-  ];
-
-  // Default Categories Fallback
-  final List<Map<String, dynamic>> _defaultCategories = [
-    {
-      'name': 'Engine & Mechanical',
-      'imageUrl': 'https://res.cloudinary.com/rqf1hlrx/image/upload/v1788828857/categories/v40ctc1xzsul1nmquwno.png',
-      'icon': Icons.engineering_rounded,
-    },
-    {
-      'name': 'Body & Exterior',
-      'imageUrl': 'https://res.cloudinary.com/rqf1hlrx/image/upload/v1788915211/categories/ssxl1agf8ydkau5aqv4h.png',
-      'icon': Icons.directions_car_rounded,
-    },
-    {
-      'name': 'Lights & Electricals',
-      'imageUrl': 'https://res.cloudinary.com/rqf1hlrx/image/upload/v1788746594/categories/w1tym7epvnhv0f9aapuf.png',
-      'icon': Icons.bolt_rounded,
-    },
-    {
-      'name': 'Suspension & Brakes',
-      'imageUrl': 'https://res.cloudinary.com/rqf1hlrx/image/upload/v1788808169/categories/ebbks7ce3jejqgtxlndo.png',
-      'icon': Icons.car_repair_rounded,
-    },
-    {
-      'name': 'Interior & Dashboard',
-      'imageUrl': 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=400&q=80',
-      'icon': Icons.airline_seat_recline_extra_rounded,
-    },
-    {
-      'name': 'Wheels & Tyres',
-      'imageUrl': 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&w=400&q=80',
-      'icon': Icons.album_rounded,
-    },
-  ];
-
-  // Default Car Brands Fallback
-  final List<Map<String, dynamic>> _defaultBrands = [
-    {'name': 'Maruti Suzuki', 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Suzuki_logo_2.svg/320px-Suzuki_logo_2.svg.png'},
-    {'name': 'Hyundai', 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Hyundai_Motor_Company_logo.svg/320px-Hyundai_Motor_Company_logo.svg.png'},
-    {'name': 'Tata Motors', 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Tata_logo.svg/320px-Tata_logo.svg.png'},
-    {'name': 'Mahindra', 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Mahindra_%26_Mahindra_Logo.svg/320px-Mahindra_%26_Mahindra_Logo.svg.png'},
-    {'name': 'Toyota', 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/Toyota_logo_%282020%29.svg/320px-Toyota_logo_%282020%29.svg.png'},
-    {'name': 'Honda', 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Honda_Logo.svg/320px-Honda_Logo.svg.png'},
-    {'name': 'Kia', 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/KIA_logo2.svg/320px-KIA_logo2.svg.png'},
-  ];
 
   final List<String> _quickTags = [
     'Headlight',
@@ -181,7 +112,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         title: Row(
           children: [
-            // App Logo
+            // Automotive Emblem Badge
             Container(
               width: 38,
               height: 38,
@@ -200,18 +131,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
-              clipBehavior: Clip.antiAlias,
-              child: Center(
-                child: Image.asset(
-                  'assets/app_logo.png',
-                  width: 30,
-                  height: 30,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const Icon(
-                    Icons.directions_car_filled_rounded,
-                    color: Colors.white,
-                    size: 22,
-                  ),
+              child: const Center(
+                child: Icon(
+                  Icons.directions_car_filled_rounded,
+                  color: Colors.white,
+                  size: 22,
                 ),
               ),
             ),
@@ -288,11 +212,78 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         actions: [
-          // Quick Language Switcher Pill
+          // Nearby Spares Map Button
+          IconButton(
+            icon: const Icon(Icons.map_rounded, color: Color(0xFF0075FF), size: 24),
+            tooltip: 'Nearby Spares Map',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NearbyMapScreen()),
+              );
+            },
+          ),
+
+          // Quick Language Switcher Pill (Supports English, Tamil, Hindi)
           GestureDetector(
             onTap: () {
-              final newCode = lang.currentLanguage == 'ta' ? 'en' : 'ta';
+              // Cycle: en -> ta -> hi -> en
+              String newCode = 'en';
+              if (lang.currentLanguage == 'en') {
+                newCode = 'ta';
+              } else if (lang.currentLanguage == 'ta') {
+                newCode = 'hi';
+              } else {
+                newCode = 'en';
+              }
               lang.setLanguage(newCode);
+            },
+            onLongPress: () {
+              // Show Language Selection BottomSheet
+              showModalBottomSheet(
+                context: context,
+                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+                builder: (ctx) => SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Select Language / மொழி / भाषा', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                        const SizedBox(height: 16),
+                        ListTile(
+                          leading: const Text('🇬🇧', style: TextStyle(fontSize: 24)),
+                          title: const Text('English', style: TextStyle(fontWeight: FontWeight.bold)),
+                          trailing: lang.currentLanguage == 'en' ? const Icon(Icons.check_circle_rounded, color: Color(0xFF0075FF)) : null,
+                          onTap: () {
+                            lang.setLanguage('en');
+                            Navigator.pop(ctx);
+                          },
+                        ),
+                        ListTile(
+                          leading: const Text('🇮🇳', style: TextStyle(fontSize: 24)),
+                          title: const Text('தமிழ் (Tamil)', style: TextStyle(fontWeight: FontWeight.bold)),
+                          trailing: lang.currentLanguage == 'ta' ? const Icon(Icons.check_circle_rounded, color: Color(0xFF0075FF)) : null,
+                          onTap: () {
+                            lang.setLanguage('ta');
+                            Navigator.pop(ctx);
+                          },
+                        ),
+                        ListTile(
+                          leading: const Text('🇮🇳', style: TextStyle(fontSize: 24)),
+                          title: const Text('हिंदी (Hindi)', style: TextStyle(fontWeight: FontWeight.bold)),
+                          trailing: lang.currentLanguage == 'hi' ? const Icon(Icons.check_circle_rounded, color: Color(0xFF0075FF)) : null,
+                          onTap: () {
+                            lang.setLanguage('hi');
+                            Navigator.pop(ctx);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
             },
             child: Container(
               margin: const EdgeInsets.symmetric(vertical: 10),
@@ -308,7 +299,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const Icon(Icons.language_rounded, color: Color(0xFF0075FF), size: 14),
                   const SizedBox(width: 4),
                   Text(
-                    lang.currentLanguage == 'ta' ? 'தமிழ்' : 'English',
+                    lang.currentLanguage == 'ta' ? 'தமிழ்' : (lang.currentLanguage == 'hi' ? 'हिंदी' : 'English'),
                     style: const TextStyle(
                       color: Color(0xFF0075FF),
                       fontSize: 11,
@@ -380,7 +371,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen()));
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        height: 50,
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
@@ -400,6 +392,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             Expanded(
                               child: Text(
                                 lang.t('searchPlaceholder'),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   color: Color(0xFF94A3B8),
                                   fontSize: 13,
@@ -469,13 +463,26 @@ class _HomeScreenState extends State<HomeScreen> {
               child: StreamBuilder<QuerySnapshot>(
                 stream: _bannersStream,
                 builder: (context, bannerSnap) {
+                  if (bannerSnap.connectionState == ConnectionState.waiting) {
+                    return Container(
+                      height: 145,
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                    );
+                  }
+
                   List<Map<String, dynamic>> bannersList = [];
                   if (bannerSnap.hasData && bannerSnap.data!.docs.isNotEmpty) {
                     bannersList = bannerSnap.data!.docs.map((d) => d.data() as Map<String, dynamic>).toList();
                     bannersList.sort((a, b) => ((a['order'] ?? 0) as num).compareTo((b['order'] ?? 0) as num));
                   }
                   if (bannersList.isEmpty) {
-                    bannersList = _defaultBanners;
+                    return const SizedBox.shrink();
                   }
 
                   return Padding(
@@ -658,13 +665,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     StreamBuilder<QuerySnapshot>(
                       stream: _categoriesStream,
                       builder: (context, catSnap) {
+                        if (catSnap.connectionState == ConnectionState.waiting) {
+                          return const SizedBox(
+                            height: 100,
+                            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                          );
+                        }
+
                         List<Map<String, dynamic>> categoriesList = [];
                         if (catSnap.hasData && catSnap.data!.docs.isNotEmpty) {
                           categoriesList = catSnap.data!.docs.map((d) => d.data() as Map<String, dynamic>).toList();
                           categoriesList.sort((a, b) => ((a['order'] ?? 0) as num).compareTo((b['order'] ?? 0) as num));
                         }
                         if (categoriesList.isEmpty) {
-                          categoriesList = _defaultCategories;
+                          return const SizedBox.shrink();
                         }
 
                         return SizedBox(
@@ -772,13 +786,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     StreamBuilder<QuerySnapshot>(
                       stream: _brandsStream,
                       builder: (context, brandSnap) {
+                        if (brandSnap.connectionState == ConnectionState.waiting) {
+                          return const SizedBox(
+                            height: 40,
+                            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                          );
+                        }
+
                         List<Map<String, dynamic>> brandsList = [];
                         if (brandSnap.hasData && brandSnap.data!.docs.isNotEmpty) {
                           brandsList = brandSnap.data!.docs.map((d) => d.data() as Map<String, dynamic>).toList();
                           brandsList.sort((a, b) => ((a['order'] ?? 0) as num).compareTo((b['order'] ?? 0) as num));
                         }
                         if (brandsList.isEmpty) {
-                          brandsList = _defaultBrands;
+                          return const SizedBox.shrink();
                         }
 
                         return SizedBox(
