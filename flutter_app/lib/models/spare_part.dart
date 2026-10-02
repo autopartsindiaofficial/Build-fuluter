@@ -31,6 +31,10 @@ class SparePart {
   final bool reported;
   final bool isDeleted;
 
+  final String isSoldLocation = ''; // Helper
+  final double? latitude;
+  final double? longitude;
+
   // Convenience getters/aliases
   String get year => compatibleYears ?? '';
   String get userId => sellerId;
@@ -66,6 +70,8 @@ class SparePart {
     this.featured = false,
     this.reported = false,
     this.isDeleted = false,
+    this.latitude,
+    this.longitude,
   });
 
   SparePart copyWith({
@@ -98,6 +104,8 @@ class SparePart {
     bool? featured,
     bool? reported,
     bool? isDeleted,
+    double? latitude,
+    double? longitude,
   }) {
     return SparePart(
       id: id ?? this.id,
@@ -129,6 +137,8 @@ class SparePart {
       featured: featured ?? this.featured,
       reported: reported ?? this.reported,
       isDeleted: isDeleted ?? this.isDeleted,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
     );
   }
 
@@ -191,6 +201,12 @@ class SparePart {
       featured: data['featured'] == true,
       reported: data['reported'] == true,
       isDeleted: data['isDeleted'] == true,
+      latitude: (data['latitude'] is num)
+          ? (data['latitude'] as num).toDouble()
+          : (data['lat'] is num ? (data['lat'] as num).toDouble() : null),
+      longitude: (data['longitude'] is num)
+          ? (data['longitude'] as num).toDouble()
+          : (data['lng'] is num ? (data['lng'] as num).toDouble() : null),
     );
   }
 
@@ -229,6 +245,8 @@ class SparePart {
       'featured': featured,
       'reported': reported,
       'isDeleted': isDeleted,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
     };
   }
 

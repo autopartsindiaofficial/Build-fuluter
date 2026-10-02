@@ -58,8 +58,44 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _bannersStream = _db.collection('banners').where('active', isEqualTo: true).snapshots();
     _categoriesStream = _db.collection('topCategories').where('active', isEqualTo: true).snapshots();
-    _brandsStream = _db.collection('carBrands').where('active', isEqualTo: true).snapshots();
+    _brandsStream = _db.collection('carBrands').snapshots();
     _startBannerAutoScroll();
+  }
+
+  static const Map<String, String> _defaultBrandLogos = {
+    'maruti': 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Suzuki_logo_2.svg/320px-Suzuki_logo_2.svg.png',
+    'maruti suzuki': 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Suzuki_logo_2.svg/320px-Suzuki_logo_2.svg.png',
+    'suzuki': 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Suzuki_logo_2.svg/320px-Suzuki_logo_2.svg.png',
+    'hyundai': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Hyundai_Motor_Company_logo.svg/320px-Hyundai_Motor_Company_logo.svg.png',
+    'tata': 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Tata_logo.svg/320px-Tata_logo.svg.png',
+    'tata motors': 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Tata_logo.svg/320px-Tata_logo.svg.png',
+    'mahindra': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Mahindra_%26_Mahindra_Logo.svg/320px-Mahindra_%26_Mahindra_Logo.svg.png',
+    'toyota': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/Toyota_logo_%282020%29.svg/320px-Toyota_logo_%282020%29.svg.png',
+    'honda': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Honda_Logo.svg/320px-Honda_Logo.svg.png',
+    'kia': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/KIA_logo2.svg/320px-KIA_logo2.svg.png',
+    'volkswagen': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Volkswagen_logo_2019.svg/320px-Volkswagen_logo_2019.svg.png',
+    'skoda': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Skoda_Auto_logo_%282023%29.svg/320px-Skoda_Auto_logo_%282023%29.svg.png',
+    'ford': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Ford_motor_company_logo.svg/320px-Ford_motor_company_logo.svg.png',
+    'renault': 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/Renault_2021.svg/320px-Renault_2021.svg.png',
+    'nissan': 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Nissan_2020_logo.svg/320px-Nissan_2020_logo.svg.png',
+    'bmw': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/320px-BMW.svg.png',
+    'mercedes': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Mercedes-Logo.svg/320px-Mercedes-Logo.svg.png',
+    'mercedes-benz': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Mercedes-Logo.svg/320px-Mercedes-Logo.svg.png',
+    'audi': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Audi-Logo_2016.svg/320px-Audi-Logo_2016.svg.png',
+  };
+
+  String? _resolveBrandLogo(Map<String, dynamic> brand) {
+    final direct = (brand['logoUrl'] ?? brand['imageUrl'] ?? brand['iconUrl'] ?? brand['logo'] ?? brand['image'])?.toString().trim();
+    if (direct != null && direct.isNotEmpty && direct.startsWith('http')) {
+      return direct;
+    }
+    final name = (brand['name'] ?? '').toString().trim().toLowerCase();
+    for (var key in _defaultBrandLogos.keys) {
+      if (name == key || name.contains(key) || key.contains(name)) {
+        return _defaultBrandLogos[key];
+      }
+    }
+    return null;
   }
 
   @override
@@ -786,55 +822,165 @@ class _HomeScreenState extends State<HomeScreen> {
                     StreamBuilder<QuerySnapshot>(
                       stream: _brandsStream,
                       builder: (context, brandSnap) {
-                        if (brandSnap.connectionState == ConnectionState.waiting) {
-                          return const SizedBox(
-                            height: 40,
-                            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                          );
-                        }
-
                         List<Map<String, dynamic>> brandsList = [];
                         if (brandSnap.hasData && brandSnap.data!.docs.isNotEmpty) {
-                          brandsList = brandSnap.data!.docs.map((d) => d.data() as Map<String, dynamic>).toList();
+                          brandsList = brandSnap.data!.docs.map((d) {
+                            final data = d.data() as Map<String, dynamic>;
+                            return {...data, 'id': d.id};
+                          }).where((d) => d['active'] != false).toList();
+
                           brandsList.sort((a, b) => ((a['order'] ?? 0) as num).compareTo((b['order'] ?? 0) as num));
                         }
+
+                        // If Firestore has no brands, supply standard Indian top car brands with verified logos
                         if (brandsList.isEmpty) {
-                          return const SizedBox.shrink();
+                          brandsList = [
+                            {'name': 'Maruti Suzuki', 'logoUrl': _defaultBrandLogos['maruti suzuki']},
+                            {'name': 'Hyundai', 'logoUrl': _defaultBrandLogos['hyundai']},
+                            {'name': 'Tata Motors', 'logoUrl': _defaultBrandLogos['tata motors']},
+                            {'name': 'Mahindra', 'logoUrl': _defaultBrandLogos['mahindra']},
+                            {'name': 'Toyota', 'logoUrl': _defaultBrandLogos['toyota']},
+                            {'name': 'Honda', 'logoUrl': _defaultBrandLogos['honda']},
+                            {'name': 'Kia', 'logoUrl': _defaultBrandLogos['kia']},
+                            {'name': 'Volkswagen', 'logoUrl': _defaultBrandLogos['volkswagen']},
+                            {'name': 'Skoda', 'logoUrl': _defaultBrandLogos['skoda']},
+                            {'name': 'Ford', 'logoUrl': _defaultBrandLogos['ford']},
+                          ];
                         }
 
+                        // Total items: 1 (All Brands) + brandsList.length
                         return SizedBox(
-                          height: 40,
-                          child: ListView.builder(
+                          height: 98,
+                          child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             padding: const EdgeInsets.symmetric(horizontal: 16),
-                            itemCount: brandsList.length,
+                            itemCount: brandsList.length + 1,
+                            separatorBuilder: (_, __) => const SizedBox(width: 12),
                             itemBuilder: (context, index) {
-                              final brand = brandsList[index];
+                              // Item 0: All Brands button
+                              if (index == 0) {
+                                final isSelected = partsProvider.selectedBrand == 'All';
+                                return GestureDetector(
+                                  onTap: () => partsProvider.selectBrand('All'),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 58,
+                                        height: 58,
+                                        decoration: BoxDecoration(
+                                          color: isSelected ? const Color(0xFF0075FF) : Colors.white,
+                                          borderRadius: BorderRadius.circular(18),
+                                          border: Border.all(
+                                            color: isSelected ? const Color(0xFF0075FF) : const Color(0xFFE2E8F0),
+                                            width: isSelected ? 2 : 1,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: isSelected
+                                                  ? const Color(0xFF0075FF).withOpacity(0.3)
+                                                  : const Color(0xFF0F172A).withOpacity(0.04),
+                                              blurRadius: isSelected ? 8 : 4,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Center(
+                                          child: Icon(
+                                            Icons.directions_car_filled_rounded,
+                                            size: 26,
+                                            color: isSelected ? Colors.white : const Color(0xFF0075FF),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        'All Brands',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                          color: isSelected ? const Color(0xFF0075FF) : const Color(0xFF334155),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+
+                              final brand = brandsList[index - 1];
                               final name = (brand['name'] ?? '') as String;
                               final isSelected = partsProvider.selectedBrand == name;
+                              final logoUrl = _resolveBrandLogo(brand);
 
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: FilterChip(
-                                  selected: isSelected,
-                                  label: Text(name),
-                                  labelStyle: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                                    color: isSelected ? Colors.white : const Color(0xFF334155),
-                                  ),
-                                  selectedColor: const Color(0xFF0075FF),
-                                  backgroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                    side: BorderSide(
-                                      color: isSelected ? const Color(0xFF0075FF) : const Color(0xFFE2E8F0),
+                              return GestureDetector(
+                                onTap: () {
+                                  partsProvider.selectBrand(isSelected ? 'All' : name);
+                                },
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 58,
+                                      height: 58,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(18),
+                                        border: Border.all(
+                                          color: isSelected ? const Color(0xFF0075FF) : const Color(0xFFE2E8F0),
+                                          width: isSelected ? 2 : 1,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: isSelected
+                                                ? const Color(0xFF0075FF).withOpacity(0.24)
+                                                : const Color(0xFF0F172A).withOpacity(0.04),
+                                            blurRadius: isSelected ? 8 : 4,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      padding: const EdgeInsets.all(8),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: (logoUrl != null && logoUrl.isNotEmpty)
+                                            ? CachedNetworkImage(
+                                                imageUrl: logoUrl,
+                                                fit: BoxFit.contain,
+                                                placeholder: (_, __) => const Center(
+                                                  child: SizedBox(
+                                                    width: 14,
+                                                    height: 14,
+                                                    child: CircularProgressIndicator(strokeWidth: 1.5, color: Color(0xFF0075FF)),
+                                                  ),
+                                                ),
+                                                errorWidget: (_, __, ___) => Center(
+                                                  child: Icon(Icons.directions_car_rounded, color: const Color(0xFF0075FF).withOpacity(0.7), size: 24),
+                                                ),
+                                              )
+                                            : Center(
+                                                child: Text(
+                                                  name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'B',
+                                                  style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF0075FF), fontSize: 20),
+                                                ),
+                                              ),
+                                      ),
                                     ),
-                                  ),
-                                  onSelected: (val) {
-                                    partsProvider.selectBrand(isSelected ? 'All' : name);
-                                  },
+                                    const SizedBox(height: 6),
+                                    SizedBox(
+                                      width: 68,
+                                      child: Text(
+                                        name,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                          color: isSelected ? const Color(0xFF0075FF) : const Color(0xFF334155),
+                                        ),
+                                        maxLines: 1,
+                                        textAlign: TextAlign.center,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               );
                             },

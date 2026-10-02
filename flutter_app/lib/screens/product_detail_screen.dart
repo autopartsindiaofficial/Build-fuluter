@@ -3,11 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/spare_part.dart';
 import '../constants/app_colors.dart';
+import '../constants/location_coordinates_helper.dart';
 import '../providers/language_provider.dart';
 import '../providers/parts_provider.dart';
 import '../widgets/make_offer_dialog.dart';
@@ -32,6 +35,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   bool _hasIncrementedView = false;
   final NumberFormat _currencyFormatter = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
 
+  GoogleMapController? _mapController;
+  late LatLng _partLocation;
+  double? _distanceInKm;
+
   FirebaseFirestore get _db {
     try {
       return FirebaseFirestore.instanceFor(
@@ -46,7 +53,137 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _initPartLocation();
     _incrementViewCount();
+  }
+
+  void _initPartLocation() {
+    if (widget.part.latitude != null && widget.part.longitude != null) {
+      _partLocation = LatLng(widget.part.latitude!, widget.part.longitude!);
+    } else {
+      _partLocation = LocationCoordinatesHelper.getCoordinatesForLocation(
+        widget.part.location,
+        widget.part.district,
+      );
+    }
+    _calculateUserDistance();
+  }
+
+  Future<void> _calculateUserDistance() async {
+    try {
+      final perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.always || perm == LocationPermission.whileInUse) {
+        final pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.low);
+        final dist = LocationCoordinatesHelper.calculateDistanceInKm(
+          pos.latitude,
+          pos.longitude,
+          _partLocation.latitude,
+          _partLocation.longitude,
+        );
+        if (mounted) {
+          setState(() {
+            _distanceInKm = dist;
+          });
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _openDirectionsInGoogleMaps() async {
+    final lat = _partLocation.latitude;
+    final lng = _partLocation.longitude;
+    final Uri url = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lng');
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        await launchUrl(url, mode: LaunchMode.platformDefault);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not launch maps: $e')),
+        );
+      }
+    }
+  }
+
+  void _openFullScreenMap() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF0F172A)),
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.part.title,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  '${widget.part.location}${widget.part.district.isNotEmpty ? ', ' + widget.part.district : ''}',
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                ),
+              ],
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.directions_rounded, color: Color(0xFF0075FF)),
+                tooltip: 'Get Directions',
+                onPressed: _openDirectionsInGoogleMaps,
+              ),
+            ],
+          ),
+          body: Stack(
+            children: [
+              GoogleMap(
+                initialCameraPosition: CameraPosition(target: _partLocation, zoom: 15),
+                myLocationEnabled: true,
+                zoomControlsEnabled: true,
+                markers: {
+                  Marker(
+                    markerId: const MarkerId('part_fullscreen'),
+                    position: _partLocation,
+                    infoWindow: InfoWindow(
+                      title: widget.part.title,
+                      snippet: '${_currencyFormatter.format(widget.part.price)} • ${widget.part.location}',
+                    ),
+                  ),
+                },
+              ),
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: 24,
+                child: SizedBox(
+                  height: 50,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0075FF),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      elevation: 4,
+                    ),
+                    icon: const Icon(Icons.navigation_rounded),
+                    label: const Text('Start Navigation in Google Maps', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    onPressed: _openDirectionsInGoogleMaps,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -705,6 +842,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
             const SizedBox(height: 8),
 
+            // 5.5 Seller Location & Map View Card
+            _buildLocationMapCard(),
+            const SizedBox(height: 8),
+
             // 6. Similar Parts (Matching Brand)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -966,6 +1107,213 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           Text(label, style: const TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500)),
           const Spacer(),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF0F172A))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLocationMapCard() {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0075FF),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Part Location & Map View',
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF0F172A)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Location details badge
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0075FF).withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.location_on_rounded, size: 20, color: Color(0xFF0075FF)),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${widget.part.location}${widget.part.district.isNotEmpty ? ', ' + widget.part.district : ''}',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A)),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          if (_distanceInKm != null) ...[
+                            Text(
+                              '📍 ${_distanceInKm!.toStringAsFixed(1)} km away from you',
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF10B981)),
+                            ),
+                          ] else ...[
+                            Text(
+                              'GPS: ${_partLocation.latitude.toStringAsFixed(4)}, ${_partLocation.longitude.toStringAsFixed(4)}',
+                              style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Embedded Google Map View
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              height: 190,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Stack(
+                children: [
+                  GoogleMap(
+                    initialCameraPosition: CameraPosition(
+                      target: _partLocation,
+                      zoom: 14.0,
+                    ),
+                    zoomControlsEnabled: false,
+                    myLocationButtonEnabled: false,
+                    markers: {
+                      Marker(
+                        markerId: const MarkerId('part_location'),
+                        position: _partLocation,
+                        infoWindow: InfoWindow(
+                          title: widget.part.title,
+                          snippet: widget.part.location,
+                        ),
+                      ),
+                    },
+                    onMapCreated: (ctrl) => _mapController = ctrl,
+                    onTap: (_) => _openFullScreenMap(),
+                  ),
+
+                  // Floating controls on map
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: InkWell(
+                      onTap: _openFullScreenMap,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.95),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 4, offset: const Offset(0, 1)),
+                          ],
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.fullscreen_rounded, size: 16, color: Color(0xFF0F172A)),
+                            SizedBox(width: 4),
+                            Text('Expand Map', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Center pin indicator helper
+                  Positioned(
+                    left: 10,
+                    bottom: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0F172A).withOpacity(0.85),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.touch_app_rounded, size: 12, color: Colors.white70),
+                          SizedBox(width: 4),
+                          Text('Tap map to explore', style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Action Buttons: Get Directions & Full Map
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0075FF),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                  ),
+                  icon: const Icon(Icons.directions_rounded, size: 18),
+                  label: const Text(
+                    'Get Directions',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                  onPressed: _openDirectionsInGoogleMaps,
+                ),
+              ),
+              const SizedBox(width: 10),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF0F172A),
+                  side: const BorderSide(color: Color(0xFFCBD5E1)),
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                icon: const Icon(Icons.map_outlined, size: 18, color: Color(0xFF0075FF)),
+                label: const Text(
+                  'Full View',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+                onPressed: _openFullScreenMap,
+              ),
+            ],
+          ),
         ],
       ),
     );

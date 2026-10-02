@@ -9,7 +9,11 @@ import '../models/spare_part.dart';
 import '../services/cloudinary_service.dart';
 import '../providers/auth_provider.dart';
 import '../providers/language_provider.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 import 'location_select_screen.dart';
+import 'map_location_picker_screen.dart';
+import '../constants/location_coordinates_helper.dart';
 import 'auth_screen.dart';
 
 class SellPartScreen extends StatefulWidget {
@@ -31,6 +35,12 @@ class _SellPartScreenState extends State<SellPartScreen> {
   final TextEditingController _locationCtrl = TextEditingController(text: 'Chennai, Tamil Nadu');
   final TextEditingController _phoneCtrl = TextEditingController();
   final TextEditingController _directUrlCtrl = TextEditingController();
+
+  double? _selectedLatitude = 13.0827;
+  double? _selectedLongitude = 80.2707;
+  String _selectedDistrict = 'Chennai';
+  bool _isDetectingGps = false;
+  GoogleMapController? _miniMapController;
 
   FirebaseFirestore get _db {
     try {
@@ -158,6 +168,115 @@ class _SellPartScreenState extends State<SellPartScreen> {
     _locationCtrl.dispose();
     _phoneCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _detectCurrentLocation() async {
+    setState(() => _isDetectingGps = true);
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please enable GPS / Location services on your phone')),
+          );
+        }
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Location permission denied')),
+            );
+          }
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Location permission permanently denied. Enable in device settings.')),
+          );
+        }
+        return;
+      }
+
+      final pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      final address = await LocationCoordinatesHelper.reverseGeocode(pos.latitude, pos.longitude);
+
+      setState(() {
+        _selectedLatitude = pos.latitude;
+        _selectedLongitude = pos.longitude;
+        if (address != null && address.isNotEmpty) {
+          _locationCtrl.text = address;
+          final parts = address.split(', ');
+          if (parts.length >= 2) {
+            _selectedDistrict = parts[parts.length - 2];
+          } else {
+            _selectedDistrict = parts.first;
+          }
+        } else {
+          _locationCtrl.text = 'GPS Pin (${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)})';
+        }
+      });
+
+      _miniMapController?.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: LatLng(pos.latitude, pos.longitude), zoom: 14.5),
+        ),
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('📍 Location updated: ${_locationCtrl.text}'),
+            backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not detect GPS: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isDetectingGps = false);
+    }
+  }
+
+  Future<void> _openMapPicker() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapLocationPickerScreen(
+          initialPosition: (_selectedLatitude != null && _selectedLongitude != null)
+              ? LatLng(_selectedLatitude!, _selectedLongitude!)
+              : const LatLng(13.0827, 80.2707),
+          initialAddress: _locationCtrl.text,
+        ),
+      ),
+    );
+
+    if (result != null && result is LocationResult) {
+      setState(() {
+        _selectedLatitude = result.latitude;
+        _selectedLongitude = result.longitude;
+        _selectedDistrict = result.district;
+        _locationCtrl.text = result.address;
+      });
+
+      _miniMapController?.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: LatLng(result.latitude, result.longitude), zoom: 14.5),
+        ),
+      );
+    }
   }
 
   void _autoGenerateTitle() {
@@ -333,7 +452,9 @@ class _SellPartScreenState extends State<SellPartScreen> {
         'price': price,
         'isNegotiable': _isNegotiable,
         'location': _locationCtrl.text.trim(),
-        'district': _locationCtrl.text.split(',').first.trim(),
+        'district': _selectedDistrict.isNotEmpty ? _selectedDistrict : _locationCtrl.text.split(',').first.trim(),
+        'latitude': _selectedLatitude,
+        'longitude': _selectedLongitude,
         'contactName': auth.userProfile?.displayName ?? user?.displayName ?? 'Verified Seller',
         'contactPhone': _phoneCtrl.text.trim(),
         'description': _descCtrl.text.trim(),
@@ -745,29 +866,190 @@ class _SellPartScreenState extends State<SellPartScreen> {
 
               const SizedBox(height: 24),
 
-              // 5. Seller Location & Contact
-              _buildSectionHeader('Seller Location & Contact', 'Buyers will call or chat with you here'),
+              // 5. Seller Location & Map Pin
+              _buildSectionHeader('Seller Location & Map Pin', 'Buyers will see your map location & calculate distance'),
               const SizedBox(height: 12),
 
-              InkWell(
-                onTap: () async {
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LocationSelectScreen()),
-                  );
-                  if (result != null && result is String) {
-                    setState(() => _locationCtrl.text = result);
-                  }
-                },
-                child: IgnorePointer(
-                  child: TextFormField(
-                    controller: _locationCtrl,
-                    decoration: _inputDecoration('Location / District *', Icons.location_on_rounded).copyWith(
-                      suffixIcon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF64748B)),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2)),
+                  ],
+                ),
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Location status chip
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0075FF).withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.location_on_rounded, size: 20, color: Color(0xFF0075FF)),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _locationCtrl.text.isNotEmpty ? _locationCtrl.text : 'Select Location',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A)),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (_selectedLatitude != null && _selectedLongitude != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: Text(
+                                    'GPS: ${_selectedLatitude!.toStringAsFixed(4)}, ${_selectedLongitude!.toStringAsFixed(4)}',
+                                    style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
+                    const SizedBox(height: 12),
+
+                    // Quick Action Buttons (Map Pick, GPS, District)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF0075FF),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              elevation: 0,
+                            ),
+                            icon: const Icon(Icons.map_rounded, size: 16),
+                            label: const Text('Pick on Map', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            onPressed: _openMapPicker,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF0F172A),
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              side: const BorderSide(color: Color(0xFFCBD5E1)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            icon: _isDetectingGps
+                                ? const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0075FF)),
+                                  )
+                                : const Icon(Icons.my_location_rounded, size: 16, color: Color(0xFF10B981)),
+                            label: Text(_isDetectingGps ? 'Detecting...' : 'Current GPS', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            onPressed: _isDetectingGps ? null : _detectCurrentLocation,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton.filledTonal(
+                          style: IconButton.styleFrom(
+                            backgroundColor: const Color(0xFFF1F5F9),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          icon: const Icon(Icons.list_alt_rounded, size: 18, color: Color(0xFF0F172A)),
+                          tooltip: 'Select from City List',
+                          onPressed: () async {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const LocationSelectScreen()),
+                            );
+                            if (result != null && result is String) {
+                              final coords = LocationCoordinatesHelper.getCoordinatesForLocation(result);
+                              setState(() {
+                                _locationCtrl.text = result;
+                                _selectedDistrict = result;
+                                _selectedLatitude = coords.latitude;
+                                _selectedLongitude = coords.longitude;
+                              });
+                              _miniMapController?.animateCamera(
+                                CameraUpdate.newLatLng(coords),
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Mini Embedded Google Map Preview
+                    if (_selectedLatitude != null && _selectedLongitude != null)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: SizedBox(
+                          height: 130,
+                          width: double.infinity,
+                          child: Stack(
+                            children: [
+                              GoogleMap(
+                                initialCameraPosition: CameraPosition(
+                                  target: LatLng(_selectedLatitude!, _selectedLongitude!),
+                                  zoom: 13.5,
+                                ),
+                                zoomControlsEnabled: false,
+                                scrollGesturesEnabled: false,
+                                zoomGesturesEnabled: false,
+                                tiltGesturesEnabled: false,
+                                rotateGesturesEnabled: false,
+                                myLocationButtonEnabled: false,
+                                markers: {
+                                  Marker(
+                                    markerId: const MarkerId('part_location'),
+                                    position: LatLng(_selectedLatitude!, _selectedLongitude!),
+                                  ),
+                                },
+                                onMapCreated: (ctrl) => _miniMapController = ctrl,
+                                onTap: (_) => _openMapPicker(),
+                              ),
+                              Positioned(
+                                right: 8,
+                                bottom: 8,
+                                child: InkWell(
+                                  onTap: _openMapPicker,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.92),
+                                      borderRadius: BorderRadius.circular(20),
+                                      boxShadow: [
+                                        BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4),
+                                      ],
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.edit_location_alt_rounded, size: 14, color: Color(0xFF0075FF)),
+                                        SizedBox(width: 4),
+                                        Text('Adjust Pin', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
+
               const SizedBox(height: 14),
 
               TextFormField(

@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../constants/app_colors.dart';
 import '../constants/indian_locations_data.dart';
+import 'map_location_picker_screen.dart';
 
 class LocationSelectScreen extends StatefulWidget {
   final String selectedLocation;
@@ -229,7 +230,7 @@ class _LocationSelectScreenState extends State<LocationSelectScreen> {
           InkWell(
             onTap: _isDetectingGPS ? null : _autoDetectGPSLocation,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
               child: Row(
                 children: [
                   const Icon(Icons.my_location_rounded, color: Color(0xFF0075FF), size: 22),
@@ -248,12 +249,57 @@ class _LocationSelectScreenState extends State<LocationSelectScreen> {
                         ),
                         const SizedBox(height: 2),
                         const Text(
-                          'India',
+                          'Detects device GPS position automatically',
                           style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
                         ),
                       ],
                     ),
                   ),
+                ],
+              ),
+            ),
+          ),
+
+          // Pick on Interactive Map Button Row
+          InkWell(
+            onTap: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const MapLocationPickerScreen(),
+                ),
+              );
+              if (result != null && result is LocationResult) {
+                await _selectLocation(result.district, state: result.state, district: result.district);
+              }
+            },
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+              child: Row(
+                children: [
+                  const Icon(Icons.map_rounded, color: Color(0xFF10B981), size: 22),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'Pick on Google Map',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            color: Color(0xFF10B981),
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Select your exact town, area or garage on map',
+                          style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8)),
                 ],
               ),
             ),

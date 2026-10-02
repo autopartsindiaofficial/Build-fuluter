@@ -16,6 +16,7 @@ class _AdminTaxonomyScreenState extends State<AdminTaxonomyScreen> with SingleTi
   final _subcategoriesController = TextEditingController();
   final _brandController = TextEditingController();
   final _modelController = TextEditingController();
+  final _brandLogoController = TextEditingController();
 
   FirebaseFirestore get _db {
     try {
@@ -188,6 +189,15 @@ class _AdminTaxonomyScreenState extends State<AdminTaxonomyScreen> with SingleTi
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _brandLogoController,
+              decoration: InputDecoration(
+                labelText: 'Brand Logo URL (Optional)',
+                hintText: 'https://example.com/logo.png',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
           ],
         ),
         actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -200,11 +210,14 @@ class _AdminTaxonomyScreenState extends State<AdminTaxonomyScreen> with SingleTi
             onPressed: () async {
               final brand = _brandController.text.trim();
               final models = _modelController.text.trim();
+              final logoUrl = _brandLogoController.text.trim();
               if (brand.isEmpty) return;
               try {
                 await _db.collection('carBrands').add({
                   'name': brand,
                   'models': models,
+                  'logoUrl': logoUrl,
+                  'imageUrl': logoUrl,
                   'active': true,
                   'order': 0,
                   'createdAt': FieldValue.serverTimestamp(),
@@ -213,6 +226,7 @@ class _AdminTaxonomyScreenState extends State<AdminTaxonomyScreen> with SingleTi
                 Navigator.pop(ctx);
                 _brandController.clear();
                 _modelController.clear();
+                _brandLogoController.clear();
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Vehicle Brand & Models Added!'), backgroundColor: Color(0xFF10B981)),
