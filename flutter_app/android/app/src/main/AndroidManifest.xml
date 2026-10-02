@@ -33,10 +33,9 @@
 
     <application
         android:label="Auto Parts India"
-        android:name="androidx.multidex.MultiDexApplication"
+        android:name="io.flutter.app.FlutterApplication"
         android:icon="@mipmap/ic_launcher"
-        android:enableOnBackInvokedCallback="true"
-        tools:node="replace">
+        android:enableOnBackInvokedCallback="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

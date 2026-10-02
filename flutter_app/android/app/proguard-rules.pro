@@ -1,17 +1,12 @@
-# Flutter Wrapper
--keep class io.flutter.app.** { *; }
--keep class io.flutter.plugin.** { *; }
--keep class io.flutter.util.** { *; }
--keep class io.flutter.view.** { *; }
--keep class io.flutter.embedding.** { *; }
+# Flutter Standard Engine Rules
+-keep class io.flutter.app.FlutterApplication { *; }
+-keep class io.flutter.embedding.engine.FlutterJNI { *; }
+-keep class io.flutter.embedding.android.FlutterActivity { *; }
+-keep class io.flutter.embedding.android.FlutterFragment { *; }
+-keep class io.flutter.plugin.common.** { *; }
 -keep class io.flutter.plugins.** { *; }
 
-# Firebase
+# Firebase & Google Play Services
 -keepattributes *Annotation*,Signature
--dontwarn com.google.firebase.**
 -keep class com.google.firebase.** { *; }
 -keep class com.google.android.gms.** { *; }
-
-# Flutter Deferred Components / Play Core (Optional when not using split APKs)
--dontwarn com.google.android.play.core.splitinstall.**
--dontwarn com.google.android.play.core.tasks.**
