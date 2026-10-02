@@ -1,5 +1,4 @@
-# Flutter Standard Engine Rules
--keep class io.flutter.app.FlutterApplication { *; }
+# Flutter Engine Rules (v2 embedding)
 -keep class io.flutter.embedding.engine.FlutterJNI { *; }
 -keep class io.flutter.embedding.android.FlutterActivity { *; }
 -keep class io.flutter.embedding.android.FlutterFragment { *; }
