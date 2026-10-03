@@ -7,7 +7,10 @@ import {
   User as FirebaseUser,
   signInWithPopup,
   GoogleAuthProvider,
-  updateProfile
+  updateProfile,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail
 } from "firebase/auth";
 import { 
   getFirestore, 
@@ -1810,6 +1813,92 @@ export async function signInWithGoogle(): Promise<User> {
   localStorage.setItem(LOCAL_STORAGE_CURRENT_USER_KEY, JSON.stringify(mockUser));
   dispatchAuthChange();
   return mockUser;
+}
+
+export async function signInWithEmail(email: string, pass: string): Promise<User> {
+  const cleanEmail = email.trim().toLowerCase();
+  if (useFirebase && auth) {
+    try {
+      const result = await signInWithEmailAndPassword(auth, cleanEmail, pass);
+      const user = await ensureFirestoreUserDoc(result.user);
+      localStorage.setItem(LOCAL_STORAGE_CURRENT_USER_KEY, JSON.stringify(user));
+      dispatchAuthChange();
+      return user;
+    } catch (err: any) {
+      console.warn("Email Auth error:", err?.code || err?.message || err);
+      throw err;
+    }
+  }
+
+  // Fallback offline mock
+  const uniqueOfflineUid = "email-offline-" + Math.random().toString(36).substring(2, 11);
+  const mockUser: User = {
+    id: uniqueOfflineUid,
+    uid: uniqueOfflineUid,
+    email: cleanEmail,
+    name: cleanEmail.split("@")[0] || "Auto Parts User",
+    displayName: cleanEmail.split("@")[0] || "Auto Parts User",
+    emailVerified: true,
+    role: "user",
+    status: "active",
+    isBlocked: false,
+    isSuperAdmin: false,
+    isAdmin: false,
+    createdAt: Date.now()
+  };
+  localStorage.setItem(LOCAL_STORAGE_CURRENT_USER_KEY, JSON.stringify(mockUser));
+  dispatchAuthChange();
+  return mockUser;
+}
+
+export async function signUpWithEmail(email: string, pass: string, displayName?: string): Promise<User> {
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanName = (displayName || "").trim() || cleanEmail.split("@")[0] || "User";
+  if (useFirebase && auth) {
+    try {
+      const result = await createUserWithEmailAndPassword(auth, cleanEmail, pass);
+      if (result.user && cleanName) {
+        try {
+          await updateProfile(result.user, { displayName: cleanName });
+        } catch (_) {}
+      }
+      const user = await ensureFirestoreUserDoc(result.user);
+      localStorage.setItem(LOCAL_STORAGE_CURRENT_USER_KEY, JSON.stringify(user));
+      dispatchAuthChange();
+      return user;
+    } catch (err: any) {
+      console.warn("Sign Up error:", err?.code || err?.message || err);
+      throw err;
+    }
+  }
+
+  // Fallback offline mock
+  const uniqueOfflineUid = "email-offline-" + Math.random().toString(36).substring(2, 11);
+  const mockUser: User = {
+    id: uniqueOfflineUid,
+    uid: uniqueOfflineUid,
+    email: cleanEmail,
+    name: cleanName,
+    displayName: cleanName,
+    emailVerified: true,
+    role: "user",
+    status: "active",
+    isBlocked: false,
+    isSuperAdmin: false,
+    isAdmin: false,
+    createdAt: Date.now()
+  };
+  localStorage.setItem(LOCAL_STORAGE_CURRENT_USER_KEY, JSON.stringify(mockUser));
+  dispatchAuthChange();
+  return mockUser;
+}
+
+export async function sendPasswordReset(email: string): Promise<void> {
+  const cleanEmail = email.trim().toLowerCase();
+  if (useFirebase && auth) {
+    await sendPasswordResetEmail(auth, cleanEmail);
+    return;
+  }
 }
 
 export async function signOut(): Promise<void> {

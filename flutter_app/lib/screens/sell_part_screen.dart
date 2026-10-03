@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -35,6 +36,11 @@ class _SellPartScreenState extends State<SellPartScreen> {
   final TextEditingController _locationCtrl = TextEditingController(text: 'Chennai, Tamil Nadu');
   final TextEditingController _phoneCtrl = TextEditingController();
   final TextEditingController _directUrlCtrl = TextEditingController();
+  final TextEditingController _customModelCtrl = TextEditingController();
+  final TextEditingController _customSubcategoryCtrl = TextEditingController();
+
+  StreamSubscription<QuerySnapshot>? _categoriesSub;
+  StreamSubscription<QuerySnapshot>? _brandsSub;
 
   double? _selectedLatitude = 13.0827;
   double? _selectedLongitude = 80.2707;
@@ -55,26 +61,26 @@ class _SellPartScreenState extends State<SellPartScreen> {
 
   // Brand to Model Cascading Map (Live synced + default fallback)
   final Map<String, List<String>> _brandModels = {
-    'Maruti Suzuki': ['Swift', 'Baleno', 'Brezza', 'Dzire', 'Ertiga', 'Wagon R', 'Alto', 'Grand Vitara', 'Ciaz', 'Fronx', 'Jimny', 'XL6', 'Ignis', 'Celerio', 'Ritz'],
-    'Hyundai': ['Creta', 'i20', 'Venue', 'Verna', 'Grand i10', 'Aura', 'Tucson', 'Exter', 'Alcazar', 'Santro', 'Eon'],
-    'Tata': ['Nexon', 'Punch', 'Harrier', 'Safari', 'Altroz', 'Tiago', 'Tigor', 'Curvv', 'Hexa', 'Indica', 'Sumo'],
-    'Mahindra': ['Thar', 'Scorpio-N', 'XUV700', 'Bolero', 'XUV300', 'Scorpio Classic', 'XUV400', 'Marazzo', 'Xylo'],
-    'Toyota': ['Innova Crysta', 'Innova Hycross', 'Fortuner', 'Hyryder', 'Glanza', 'Hilux', 'Camry', 'Etios', 'Corolla Altis'],
-    'Honda': ['City', 'Amaze', 'Elevate', 'WR-V', 'Jazz', 'Civic', 'BR-V', 'CR-V', 'Brio'],
-    'Kia': ['Seltos', 'Sonet', 'Carens', 'Carnival', 'EV6'],
-    'Volkswagen': ['Virtus', 'Taigun', 'Polo', 'Vento', 'Tiguan', 'Passat'],
-    'Skoda': ['Slavia', 'Kushaq', 'Kodiaq', 'Octavia', 'Superb', 'Rapid'],
-    'Ford': ['EcoSport', 'Endeavour', 'Figo', 'Aspire', 'Freestyle'],
+    'Maruti Suzuki': ['Swift', 'Baleno', 'Brezza', 'Dzire', 'Ertiga', 'Wagon R', 'Alto', 'Grand Vitara', 'Ciaz', 'Fronx', 'Jimny', 'XL6', 'Ignis', 'Celerio', 'Ritz', 'Other / Custom Model'],
+    'Hyundai': ['Creta', 'i20', 'Venue', 'Verna', 'Grand i10', 'Aura', 'Tucson', 'Exter', 'Alcazar', 'Santro', 'Eon', 'Other / Custom Model'],
+    'Tata': ['Nexon', 'Punch', 'Harrier', 'Safari', 'Altroz', 'Tiago', 'Tigor', 'Curvv', 'Hexa', 'Indica', 'Sumo', 'Other / Custom Model'],
+    'Mahindra': ['Thar', 'Scorpio-N', 'XUV700', 'Bolero', 'XUV300', 'Scorpio Classic', 'XUV400', 'Marazzo', 'Xylo', 'Other / Custom Model'],
+    'Toyota': ['Innova Crysta', 'Innova Hycross', 'Fortuner', 'Hyryder', 'Glanza', 'Hilux', 'Camry', 'Etios', 'Corolla Altis', 'Other / Custom Model'],
+    'Honda': ['City', 'Amaze', 'Elevate', 'WR-V', 'Jazz', 'Civic', 'BR-V', 'CR-V', 'Brio', 'Other / Custom Model'],
+    'Kia': ['Seltos', 'Sonet', 'Carens', 'Carnival', 'EV6', 'Other / Custom Model'],
+    'Volkswagen': ['Virtus', 'Taigun', 'Polo', 'Vento', 'Tiguan', 'Passat', 'Other / Custom Model'],
+    'Skoda': ['Slavia', 'Kushaq', 'Kodiaq', 'Octavia', 'Superb', 'Rapid', 'Other / Custom Model'],
+    'Ford': ['EcoSport', 'Endeavour', 'Figo', 'Aspire', 'Freestyle', 'Other / Custom Model'],
   };
 
   // Categories & Sub-parts (Live synced + default fallback)
   final Map<String, List<String>> _categories = {
-    'Engine & Mechanical': ['Turbocharger', 'Cylinder Head', 'Pistons & Rings', 'Timing Belt & Chain', 'Engine Oil Pump', 'Fuel Injector', 'Alternator', 'Starter Motor'],
-    'Body & Exterior': ['Front Bumper', 'Rear Bumper', 'Headlight Assembly', 'Tail Light Assembly', 'Side Mirrors (ORVM)', 'Bonnet / Hood', 'Front Fender', 'Car Doors'],
-    'Lights & Electricals': ['LED Headlights', 'Fog Lamps', 'Car Battery', 'ECU (Engine Control Unit)', 'Wiring Harness', 'Power Window Motor', 'Ignition Coil'],
-    'Suspension & Brakes': ['Front Shock Absorbers', 'Brake Calipers & Pads', 'Brake Discs / Rotors', 'Steering Rack & Pinion', 'Lower Control Arm', 'Tie Rod Ends'],
-    'Interior & Dashboard': ['Steering Wheel', 'Instrument Cluster', 'Dashboard Panel', 'AC Compressor', 'AC Cooling Coil', 'Seats & Upholstery'],
-    'Transmission & Clutch': ['Clutch Plate & Pressure Plate', 'Gearbox Assembly', 'Flywheel', 'Driveshaft / Axle', 'Clutch Master Cylinder'],
+    'Engine & Mechanical': ['Turbocharger', 'Cylinder Head', 'Pistons & Rings', 'Timing Belt & Chain', 'Engine Oil Pump', 'Fuel Injector', 'Alternator', 'Starter Motor', 'Other / Custom Component'],
+    'Body & Exterior': ['Front Bumper', 'Rear Bumper', 'Headlight Assembly', 'Tail Light Assembly', 'Side Mirrors (ORVM)', 'Bonnet / Hood', 'Front Fender', 'Car Doors', 'Other / Custom Component'],
+    'Lights & Electricals': ['LED Headlights', 'Fog Lamps', 'Car Battery', 'ECU (Engine Control Unit)', 'Wiring Harness', 'Power Window Motor', 'Ignition Coil', 'Other / Custom Component'],
+    'Suspension & Brakes': ['Front Shock Absorbers', 'Brake Calipers & Pads', 'Brake Discs / Rotors', 'Steering Rack & Pinion', 'Lower Control Arm', 'Tie Rod Ends', 'Other / Custom Component'],
+    'Interior & Dashboard': ['Steering Wheel', 'Instrument Cluster', 'Dashboard Panel', 'AC Compressor', 'AC Cooling Coil', 'Seats & Upholstery', 'Other / Custom Component'],
+    'Transmission & Clutch': ['Clutch Plate & Pressure Plate', 'Gearbox Assembly', 'Flywheel', 'Driveshaft / Axle', 'Clutch Master Cylinder', 'Other / Custom Component'],
   };
 
   late String _selectedBrand;
@@ -106,61 +112,91 @@ class _SellPartScreenState extends State<SellPartScreen> {
     _selectedCategory = _categories.keys.first;
     _selectedSubcategory = _categories[_selectedCategory]!.first;
     _autoGenerateTitle();
-    _loadDynamicTaxonomy();
+    _subscribeToDynamicTaxonomy();
   }
 
-  Future<void> _loadDynamicTaxonomy() async {
-    try {
-      // Sync dynamic topCategories from admin
-      final catSnap = await _db.collection('topCategories').where('active', isEqualTo: true).get();
-      if (catSnap.docs.isNotEmpty) {
-        for (var doc in catSnap.docs) {
-          final data = doc.data();
-          final name = (data['name'] as String? ?? '').trim();
-          if (name.isNotEmpty) {
-            List<String> subList = [];
-            if (data['subcategories'] is String && (data['subcategories'] as String).isNotEmpty) {
-              subList = (data['subcategories'] as String).split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
-            } else if (data['subcategories'] is List) {
-              subList = List<String>.from(data['subcategories']);
-            }
-            if (subList.isEmpty) {
-              subList = ['$name Assembly', 'OEM $name', 'Replacement $name Parts'];
-            }
-            _categories[name] = subList;
-          }
+  void _subscribeToDynamicTaxonomy() {
+    // 1. Categories & Subcategories Live Listener from Admin Panel
+    _categoriesSub = _db.collection('topCategories').snapshots().listen((catSnap) {
+      if (!mounted) return;
+      for (var doc in catSnap.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        if (data['active'] == false) continue;
+        final name = (data['name'] ?? data['category'] ?? data['title'] ?? '').toString().trim();
+        if (name.isEmpty) continue;
+
+        List<String> subList = [];
+        final rawSub = data['subcategories'] ?? data['subCategories'] ?? data['subparts'] ?? data['items'] ?? data['components'];
+        if (rawSub is String && rawSub.trim().isNotEmpty) {
+          subList = rawSub.split(RegExp(r'[,;\n\r]+')).map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+        } else if (rawSub is List) {
+          subList = rawSub.map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList();
         }
+
+        if (subList.isEmpty) {
+          subList = ['$name Assembly', 'OEM $name', 'Replacement $name Parts'];
+        }
+        if (!subList.contains('Other / Custom Component')) {
+          subList.add('Other / Custom Component');
+        }
+
+        _categories[name] = subList;
       }
 
-      // Sync dynamic carBrands from admin
-      final brandSnap = await _db.collection('carBrands').where('active', isEqualTo: true).get();
-      if (brandSnap.docs.isNotEmpty) {
-        for (var doc in brandSnap.docs) {
-          final data = doc.data();
-          final name = (data['name'] as String? ?? '').trim();
-          if (name.isNotEmpty) {
-            List<String> modelList = [];
-            if (data['models'] is String && (data['models'] as String).isNotEmpty) {
-              modelList = (data['models'] as String).split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
-            } else if (data['models'] is List) {
-              modelList = List<String>.from(data['models']);
-            }
-            if (modelList.isEmpty) {
-              modelList = ['All Models', 'Standard Spec', 'Base Spec', 'Top Spec'];
-            }
-            _brandModels[name] = modelList;
-          }
+      // Safety check to ensure selected values exist
+      if (!_categories.containsKey(_selectedCategory)) {
+        _selectedCategory = _categories.keys.first;
+      }
+      if (!_categories[_selectedCategory]!.contains(_selectedSubcategory)) {
+        _selectedSubcategory = _categories[_selectedCategory]!.first;
+      }
+      setState(() {});
+    }, onError: (_) {});
+
+    // 2. Car Brands & Models / Sub-brands Live Listener from Admin Panel
+    _brandsSub = _db.collection('carBrands').snapshots().listen((brandSnap) {
+      if (!mounted) return;
+      for (var doc in brandSnap.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        if (data['active'] == false) continue;
+        final name = (data['name'] ?? data['brand'] ?? '').toString().trim();
+        if (name.isEmpty) continue;
+
+        List<String> modelList = [];
+        final rawModels = data['models'] ?? data['subBrands'] ?? data['subbrands'] ?? data['sub_brands'] ?? data['carModels'] ?? data['variants'];
+        if (rawModels is String && rawModels.trim().isNotEmpty) {
+          modelList = rawModels.split(RegExp(r'[,;\n\r]+')).map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+        } else if (rawModels is List) {
+          modelList = rawModels.map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList();
         }
+
+        if (modelList.isEmpty) {
+          modelList = ['All Models', 'Standard Spec', 'Base Spec', 'Top Spec'];
+        }
+        if (!modelList.contains('Other / Custom Model')) {
+          modelList.add('Other / Custom Model');
+        }
+
+        _brandModels[name] = modelList;
       }
 
-      if (mounted) {
-        setState(() {});
+      // Safety check to ensure selected values exist
+      if (!_brandModels.containsKey(_selectedBrand)) {
+        _selectedBrand = _brandModels.keys.first;
       }
-    } catch (_) {}
+      if (!_brandModels[_selectedBrand]!.contains(_selectedModel)) {
+        _selectedModel = _brandModels[_selectedBrand]!.first;
+      }
+      setState(() {});
+    }, onError: (_) {});
   }
 
   @override
   void dispose() {
+    _categoriesSub?.cancel();
+    _brandsSub?.cancel();
+    _customModelCtrl.dispose();
+    _customSubcategoryCtrl.dispose();
     _titleCtrl.dispose();
     _priceCtrl.dispose();
     _oemCtrl.dispose();
@@ -280,7 +316,18 @@ class _SellPartScreenState extends State<SellPartScreen> {
   }
 
   void _autoGenerateTitle() {
-    _titleCtrl.text = '$_selectedBrand $_selectedModel $_selectedSubcategory ($_selectedYear)';
+    final modelName = (_selectedModel == 'Other / Custom Model' && _customModelCtrl.text.trim().isNotEmpty)
+        ? _customModelCtrl.text.trim()
+        : (_selectedModel == 'Other / Custom Model' ? '' : _selectedModel);
+    final subcatName = (_selectedSubcategory == 'Other / Custom Component' && _customSubcategoryCtrl.text.trim().isNotEmpty)
+        ? _customSubcategoryCtrl.text.trim()
+        : (_selectedSubcategory == 'Other / Custom Component' ? '' : _selectedSubcategory);
+
+    String title = _selectedBrand;
+    if (modelName.isNotEmpty) title += ' $modelName';
+    if (subcatName.isNotEmpty) title += ' $subcatName';
+    title += ' ($_selectedYear)';
+    _titleCtrl.text = title.trim();
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -439,13 +486,20 @@ class _SellPartScreenState extends State<SellPartScreen> {
       final double price = double.tryParse(_priceCtrl.text.replaceAll(',', '').trim()) ?? 0;
       final docRef = _db.collection('spareParts').doc();
 
+      final finalModel = (_selectedModel == 'Other / Custom Model' && _customModelCtrl.text.trim().isNotEmpty)
+          ? _customModelCtrl.text.trim()
+          : _selectedModel;
+      final finalSubcategory = (_selectedSubcategory == 'Other / Custom Component' && _customSubcategoryCtrl.text.trim().isNotEmpty)
+          ? _customSubcategoryCtrl.text.trim()
+          : _selectedSubcategory;
+
       final partData = {
         'id': docRef.id,
         'title': _titleCtrl.text.trim(),
         'carBrand': _selectedBrand,
-        'carModel': _selectedModel,
+        'carModel': finalModel,
         'category': _selectedCategory,
-        'subcategory': _selectedSubcategory,
+        'subcategory': finalSubcategory,
         'condition': _selectedCondition,
         'fuelType': _selectedFuelType,
         'year': _selectedYear,
@@ -655,43 +709,67 @@ class _SellPartScreenState extends State<SellPartScreen> {
               _buildSectionHeader('Vehicle Compatibility', 'Select the exact automobile model this part belongs to'),
               const SizedBox(height: 12),
 
-              // Car Brand Dropdown
-              DropdownButtonFormField<String>(
-                value: _selectedBrand,
-                isExpanded: true,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
-                icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF64748B), size: 24),
-                decoration: _inputDecoration('Car Brand *', Icons.directions_car_rounded),
-                items: _brandModels.keys.map((b) => DropdownMenuItem(value: b, child: Text(b, overflow: TextOverflow.ellipsis))).toList(),
-                onChanged: (val) {
-                  if (val != null) {
-                    setState(() {
-                      _selectedBrand = val;
-                      _selectedModel = _brandModels[val]!.first;
-                      _autoGenerateTitle();
-                    });
-                  }
-                },
-              ),
-              const SizedBox(height: 14),
+              // Car Brand & Model Cascading Section
+              Builder(builder: (context) {
+                final safeBrand = _brandModels.containsKey(_selectedBrand) ? _selectedBrand : _brandModels.keys.first;
+                final modelsList = _brandModels[safeBrand] ?? ['Standard Spec', 'Other / Custom Model'];
+                final safeModel = modelsList.contains(_selectedModel) ? _selectedModel : modelsList.first;
 
-              // Car Model Dropdown (Cascading)
-              DropdownButtonFormField<String>(
-                value: _selectedModel,
-                isExpanded: true,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
-                icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF64748B), size: 24),
-                decoration: _inputDecoration('Car Model *', Icons.car_repair_rounded),
-                items: _brandModels[_selectedBrand]!.map((m) => DropdownMenuItem(value: m, child: Text(m, overflow: TextOverflow.ellipsis))).toList(),
-                onChanged: (val) {
-                  if (val != null) {
-                    setState(() {
-                      _selectedModel = val;
-                      _autoGenerateTitle();
-                    });
-                  }
-                },
-              ),
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: safeBrand,
+                      isExpanded: true,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                      icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF64748B), size: 24),
+                      decoration: _inputDecoration('Car Brand *', Icons.directions_car_rounded),
+                      items: _brandModels.keys.map((b) => DropdownMenuItem(value: b, child: Text(b, overflow: TextOverflow.ellipsis))).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() {
+                            _selectedBrand = val;
+                            _selectedModel = _brandModels[val]!.first;
+                            _autoGenerateTitle();
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 14),
+
+                    DropdownButtonFormField<String>(
+                      value: safeModel,
+                      isExpanded: true,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                      icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF64748B), size: 24),
+                      decoration: _inputDecoration('Car Model / Sub-brand *', Icons.car_repair_rounded),
+                      items: modelsList.map((m) => DropdownMenuItem(value: m, child: Text(m, overflow: TextOverflow.ellipsis))).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() {
+                            _selectedModel = val;
+                            _autoGenerateTitle();
+                          });
+                        }
+                      },
+                    ),
+
+                    if (safeModel == 'Other / Custom Model') ...[
+                      const SizedBox(height: 10),
+                      TextFormField(
+                        controller: _customModelCtrl,
+                        decoration: _inputDecoration('Specify Model / Sub-brand Name *', Icons.edit_rounded).copyWith(
+                          hintText: 'e.g. Swift 2024 ZXi+ / Scorpio Classic S11',
+                        ),
+                        onChanged: (_) => _autoGenerateTitle(),
+                        validator: (val) => (safeModel == 'Other / Custom Model' && (val == null || val.trim().isEmpty))
+                            ? 'Please specify the vehicle model / variant'
+                            : null,
+                      ),
+                    ],
+                  ],
+                );
+              }),
               const SizedBox(height: 14),
 
               // Fuel Type & Year Row
@@ -735,44 +813,69 @@ class _SellPartScreenState extends State<SellPartScreen> {
               const SizedBox(height: 24),
 
               // 3. Category & Part Identification
-              _buildSectionHeader('Part Category', 'Select the component category and type'),
+              _buildSectionHeader('Part Category & Component', 'Select the component category and exact part name'),
               const SizedBox(height: 12),
 
-              DropdownButtonFormField<String>(
-                value: _selectedCategory,
-                isExpanded: true,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
-                icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF64748B), size: 24),
-                decoration: _inputDecoration('Category *', Icons.category_rounded),
-                items: _categories.keys.map((c) => DropdownMenuItem(value: c, child: Text(c, overflow: TextOverflow.ellipsis))).toList(),
-                onChanged: (val) {
-                  if (val != null) {
-                    setState(() {
-                      _selectedCategory = val;
-                      _selectedSubcategory = _categories[val]!.first;
-                      _autoGenerateTitle();
-                    });
-                  }
-                },
-              ),
-              const SizedBox(height: 14),
+              Builder(builder: (context) {
+                final safeCategory = _categories.containsKey(_selectedCategory) ? _selectedCategory : _categories.keys.first;
+                final subList = _categories[safeCategory] ?? ['General Component', 'Other / Custom Component'];
+                final safeSubcategory = subList.contains(_selectedSubcategory) ? _selectedSubcategory : subList.first;
 
-              DropdownButtonFormField<String>(
-                value: _selectedSubcategory,
-                isExpanded: true,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
-                icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF64748B), size: 24),
-                decoration: _inputDecoration('Subcategory *', Icons.subdirectory_arrow_right_rounded),
-                items: _categories[_selectedCategory]!.map((s) => DropdownMenuItem(value: s, child: Text(s, overflow: TextOverflow.ellipsis))).toList(),
-                onChanged: (val) {
-                  if (val != null) {
-                    setState(() {
-                      _selectedSubcategory = val;
-                      _autoGenerateTitle();
-                    });
-                  }
-                },
-              ),
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: safeCategory,
+                      isExpanded: true,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                      icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF64748B), size: 24),
+                      decoration: _inputDecoration('Category *', Icons.category_rounded),
+                      items: _categories.keys.map((c) => DropdownMenuItem(value: c, child: Text(c, overflow: TextOverflow.ellipsis))).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() {
+                            _selectedCategory = val;
+                            _selectedSubcategory = _categories[val]!.first;
+                            _autoGenerateTitle();
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 14),
+
+                    DropdownButtonFormField<String>(
+                      value: safeSubcategory,
+                      isExpanded: true,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                      icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF64748B), size: 24),
+                      decoration: _inputDecoration('Subcategory / Part Component *', Icons.subdirectory_arrow_right_rounded),
+                      items: subList.map((s) => DropdownMenuItem(value: s, child: Text(s, overflow: TextOverflow.ellipsis))).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() {
+                            _selectedSubcategory = val;
+                            _autoGenerateTitle();
+                          });
+                        }
+                      },
+                    ),
+
+                    if (safeSubcategory == 'Other / Custom Component') ...[
+                      const SizedBox(height: 10),
+                      TextFormField(
+                        controller: _customSubcategoryCtrl,
+                        decoration: _inputDecoration('Specify Component / Subcategory Name *', Icons.build_rounded).copyWith(
+                          hintText: 'e.g. Roof Rail / Window Regulator / Spoiler',
+                        ),
+                        onChanged: (_) => _autoGenerateTitle(),
+                        validator: (val) => (safeSubcategory == 'Other / Custom Component' && (val == null || val.trim().isEmpty))
+                            ? 'Please specify component or subcategory name'
+                            : null,
+                      ),
+                    ],
+                  ],
+                );
+              }),
               const SizedBox(height: 14),
 
               // OEM Part Number Field

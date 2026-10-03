@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import AutoPartsBrandLogo from "./AutoPartsBrandLogo";
 
 interface SplashScreenProps {
   onFinish?: () => void;
@@ -28,13 +27,13 @@ export default function SplashScreen({
       setMinTimeElapsed(true);
     }, minDurationMs);
 
-    // Hard fallback safety: never keep splash open longer than 3.5s under any condition
+    // Hard fallback safety: never keep splash open longer than 3.0s under any condition
     const maxTimer = setTimeout(() => {
       setMinTimeElapsed(true);
       if (!hasFinishedRef.current) {
         setVisible(false);
       }
-    }, 3500);
+    }, 3000);
 
     return () => {
       clearTimeout(minTimer);
@@ -64,51 +63,40 @@ export default function SplashScreen({
       {visible && (
         <motion.div
           key="native-mobile-splash-screen"
-          initial={{ opacity: 1 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           exit={{ 
             opacity: 0,
             transition: { duration: 0.35, ease: "easeInOut" } 
           }}
-          className="fixed inset-0 z-[99999] w-screen h-screen bg-[#0075FF] flex flex-col items-center justify-between p-6 select-none overflow-hidden touch-none"
-          style={{ height: "100dvh", width: "100vw" }}
+          className="fixed inset-0 z-[99999] w-screen h-screen bg-[#25242E] flex flex-col items-center justify-center select-none overflow-hidden touch-none"
+          style={{ height: "100dvh", width: "100vw", backgroundColor: "#25242E" }}
           id="app-native-splash-screen"
         >
-          <div className="flex-1" />
-
-          {/* Centered Brand Unit matching user's image */}
-          <div className="flex flex-col items-center justify-center text-center relative z-10 w-full max-w-sm px-4">
-            <motion.div
-              initial={{ scale: 1, opacity: 1 }}
-              animate={{ 
-                scale: 1,
-                opacity: 1
-              }}
-              className="w-full flex flex-col items-center justify-center"
-            >
-              <AutoPartsBrandLogo 
-                size={340}
-                variant="splash"
-              />
-            </motion.div>
-          </div>
-
-          <div className="flex-1" />
-
-          {/* Footer */}
+          {/* Main Content Area: Exact Reference Image Display */}
           <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.4 }}
-            className="flex items-center justify-center pb-8"
+            initial={{ scale: 0.98, opacity: 0.95 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.45, ease: "easeOut" }}
+            className="relative w-full h-full max-w-md max-h-screen flex items-center justify-center p-0"
           >
-            <p className="text-white/95 text-sm sm:text-base font-normal tracking-wide text-center drop-shadow-sm">
-              India’s leading auto parts marketplace
-            </p>
+            <picture className="w-full h-full flex items-center justify-center">
+              <source srcSet="/assets/splash_reference.webp" type="image/webp" />
+              <img 
+                src="/assets/splash_reference.png" 
+                alt="Auto Parts India" 
+                className="w-full h-full object-contain pointer-events-none select-none drop-shadow-2xl"
+                draggable={false}
+              />
+            </picture>
+
+            {/* Subtle bottom indicator matching reference orange accent */}
+            <div className="absolute bottom-6 left-0 right-0 flex items-center justify-center pointer-events-none">
+              <div className="w-5 h-5 rounded-full border-2 border-[#FF7300]/30 border-t-[#FF7300] animate-spin" />
+            </div>
           </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
   );
 }
-
-

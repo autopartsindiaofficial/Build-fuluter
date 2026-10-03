@@ -51,11 +51,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   void initState() {
     super.initState();
 
-    // Match Android Status & Navigation Bars to Dark Navy Splash
+    // Match Android Status & Navigation Bars to Dark Slate #25242E Splash
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: Color(0xFF0A0F1D),
+      systemNavigationBarColor: Color(0xFF25242E),
       systemNavigationBarIconBrightness: Brightness.light,
     ));
 
@@ -204,91 +204,116 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0F1D), // Exactly matches Android native splash_navy
+      backgroundColor: const Color(0xFF25242E), // Exact background color matching reference image
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: const SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
           statusBarIconBrightness: Brightness.light,
-          systemNavigationBarColor: Color(0xFF0A0F1D),
+          systemNavigationBarColor: Color(0xFF25242E),
           systemNavigationBarIconBrightness: Brightness.light,
         ),
         child: SizedBox.expand(
           child: Stack(
+            fit: StackFit.expand,
             alignment: Alignment.center,
             children: [
-              // Clean Material Emblem & Brand Typography
+              // Exact Reference Image Splash Screen
               FadeTransition(
                 opacity: _fadeAnimation,
                 child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 84,
-                        height: 84,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0075FF),
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF0075FF).withOpacity(0.4),
-                              blurRadius: 32,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.directions_car_filled_rounded,
-                            size: 46,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Auto Parts India',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
-                        ),
-                        child: const Text(
-                          'GENUINE AUTO PARTS MARKETPLACE',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                      ),
-                    ],
+                  child: Image.asset(
+                    'assets/images/splash_reference.png',
+                    fit: BoxFit.contain,
+                    width: double.infinity,
+                    height: double.infinity,
+                    errorBuilder: (context, error, stackTrace) {
+                      // Graceful fallback to root assets path if nested path fails
+                      return Image.asset(
+                        'assets/splash_reference.png',
+                        fit: BoxFit.contain,
+                        width: double.infinity,
+                        height: double.infinity,
+                        errorBuilder: (_, __, ___) {
+                          // Beautiful vector fallback with identical styling
+                          return Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 88,
+                                height: 88,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFF7300),
+                                  borderRadius: BorderRadius.circular(24),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFFFF7300).withOpacity(0.35),
+                                      blurRadius: 32,
+                                      offset: const Offset(0, 10),
+                                    ),
+                                  ],
+                                ),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.directions_car_filled_rounded,
+                                    size: 48,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: const [
+                                  Text(
+                                    'Auto ',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -0.5,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Parts',
+                                    style: TextStyle(
+                                      color: Color(0xFFFF7300),
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              const Text(
+                                '—  I N D I A  —',
+                                style: TextStyle(
+                                  color: Color(0xFFE5E7EB),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 4.0,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
                   ),
                 ),
               ),
 
-              // Subtle bottom loading spinner
+              // Subtle bottom loading spinner matching brand orange
               Positioned(
-                bottom: 48,
+                bottom: 36,
                 child: SafeArea(
                   child: FadeTransition(
                     opacity: _fadeAnimation,
                     child: const SizedBox(
-                      width: 22,
-                      height: 22,
+                      width: 20,
+                      height: 20,
                       child: CircularProgressIndicator(
-                        color: Color(0xFF0075FF),
+                        color: Color(0xFFFF7300),
                         strokeWidth: 2.2,
                       ),
                     ),

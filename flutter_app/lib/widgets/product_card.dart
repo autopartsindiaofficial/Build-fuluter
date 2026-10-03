@@ -9,8 +9,9 @@ import '../screens/product_detail_screen.dart';
 
 class ProductCard extends StatelessWidget {
   final SparePart part;
+  final double? distanceInKm;
 
-  const ProductCard({Key? key, required this.part}) : super(key: key);
+  const ProductCard({Key? key, required this.part, this.distanceInKm}) : super(key: key);
 
   String _formatDate(DateTime dt) {
     final diff = DateTime.now().difference(dt);
@@ -77,6 +78,32 @@ class ProductCard extends StatelessWidget {
                           color: const Color(0xFFF1F5F9),
                           child: const Icon(Icons.directions_car_filled_rounded, size: 36, color: Color(0xFF94A3B8)),
                         ),
+
+                  // Sold Overlay Badge
+                  if (part.isSold)
+                    Positioned.fill(
+                      child: Container(
+                        color: Colors.black.withOpacity(0.55),
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEF4444),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text(
+                              'SOLD',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
 
                   // Condition Badge (Top Left)
                   Positioned(
@@ -188,13 +215,17 @@ class ProductCard extends StatelessWidget {
                             const SizedBox(width: 2),
                             Expanded(
                               child: Text(
-                                part.location,
+                                distanceInKm != null
+                                    ? (distanceInKm! <= 15.0
+                                        ? '${part.location.split(',').first.trim()} • Local'
+                                        : '${part.location.split(',').first.trim()} • ${distanceInKm!.toStringAsFixed(0)} km away')
+                                    : part.location,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 10,
-                                  color: Color(0xFF94A3B8),
-                                  fontWeight: FontWeight.w500,
+                                  color: distanceInKm != null ? const Color(0xFF059669) : const Color(0xFF94A3B8),
+                                  fontWeight: distanceInKm != null ? FontWeight.bold : FontWeight.w500,
                                 ),
                               ),
                             ),

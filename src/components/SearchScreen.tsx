@@ -20,9 +20,11 @@ import UserAvatar from "./UserAvatar";
 import PullToRefresh from "./PullToRefresh";
 import { useLanguage } from "../lib/LanguageContext";
 import { translateDynamic } from "../lib/translations";
-import { formatLocationBadgeWithDistance, LatLng } from "../utils/locationHelper";
+import { formatLocationBadgeWithDistance, calculateDistance, LatLng } from "../utils/locationHelper";
 import { matchPartSearch, parseCreatedAt } from "../utils/searchHelper";
 import { matchesCategoryFilter } from "../utils/categoryMatcher";
+import BrandLogo from "./BrandLogo";
+import { Category3DIcon } from "./Category3DIcon";
 
 interface SearchScreenProps {
   parts: SparePart[];
@@ -205,6 +207,138 @@ export default function SearchScreen({
     sortBy
   ]);
 
+  const isSearchActive = Boolean(
+    searchQuery.trim() ||
+    (selectedCategory !== "All Categories" && selectedCategory !== "All") ||
+    (selectedBrand !== "All Brands" && selectedBrand !== "All") ||
+    (selectedModel !== "All Models" && selectedModel !== "All") ||
+    selectedState !== "All States" ||
+    selectedDistrict !== "All Districts"
+  );
+
+  const { localParts, nearbyParts } = useMemo(() => {
+    const userCity = (localStorage.getItem("autoparts_selected_district") || localStorage.getItem("autoparts_user_area") || selectedDistrict || "").toLowerCase().trim();
+    const userLat = parseFloat(localStorage.getItem("autoparts_user_lat") || "0");
+    const userLng = parseFloat(localStorage.getItem("autoparts_user_lng") || "0");
+    const hasUserCoords = userLat !== 0 && userLng !== 0;
+
+    const locals: SparePart[] = [];
+    const nearbys: SparePart[] = [];
+
+    for (const part of filteredParts) {
+      const partLoc = [part.location, part.district, part.city].filter(Boolean).join(" ").toLowerCase();
+      let isLocal = false;
+
+      if (userCity && userCity !== "all districts" && userCity !== "all india") {
+        if (partLoc.includes(userCity)) {
+          isLocal = true;
+        }
+      }
+
+      if (!isLocal && hasUserCoords && part.lat && part.lng) {
+        const d = calculateDistance(userLat, userLng, part.lat, part.lng);
+        if (d <= 25) {
+          isLocal = true;
+        }
+      }
+
+      if (isLocal) {
+        locals.push(part);
+      } else {
+        nearbys.push(part);
+      }
+    }
+
+    if (hasUserCoords && sortBy === "newest") {
+      nearbys.sort((a, b) => {
+        const distA = a.lat && a.lng ? calculateDistance(userLat, userLng, a.lat, a.lng) : 99999;
+        const distB = b.lat && b.lng ? calculateDistance(userLat, userLng, b.lat, b.lng) : 99999;
+        return distA - distB;
+      });
+    }
+
+    return { localParts: locals, nearbyParts: nearbys };
+  }, [filteredParts, selectedDistrict, sortBy]);
+
+  const renderRectangularCard = (part: SparePart, isLocal: boolean) => {
+    const isFavorite = favorites.includes(part.id);
+    const locBadge = formatLocationBadgeWithDistance(part);
+
+    return (
+      <div
+        key={part.id}
+        onClick={() => onViewPart && onViewPart(part)}
+        className="bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl overflow-hidden flex cursor-pointer active:scale-[0.99] transition-all shadow-xs hover:shadow-md p-2 gap-3"
+      >
+        {/* Rectangular Image Box (Sevvagam) */}
+        <div className="relative w-28 h-28 shrink-0 bg-slate-900 rounded-xl overflow-hidden">
+          <img
+            src={part.imageUrl || (part.imageUrls && part.imageUrls[0]) || "https://images.unsplash.com/photo-1486006920555-c77dce18193b?auto=format&fit=crop&q=80&w=400"}
+            alt={part.title}
+            className="w-full h-full object-cover object-center"
+            loading="lazy"
+          />
+          {part.sold && (
+            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+              <span className="text-[10px] font-black tracking-wider text-white bg-red-600 px-2 py-0.5 rounded">SOLD</span>
+            </div>
+          )}
+          <span className="absolute top-1.5 left-1.5 text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-xs text-white">
+            {part.condition.includes("New") ? "New" : "Used"}
+          </span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onFavoriteToggle) onFavoriteToggle(part.id);
+            }}
+            className="absolute top-1.5 right-1.5 p-1 text-white hover:scale-110 active:scale-90 transition-transform cursor-pointer drop-shadow-md"
+            aria-label="Toggle Favorite"
+          >
+            <Heart
+              size={15}
+              fill={isFavorite ? "#EF4444" : "none"}
+              className={isFavorite ? "text-red-500 stroke-red-500" : "text-white stroke-white"}
+              strokeWidth={2.2}
+            />
+          </button>
+        </div>
+
+        {/* Content Details on Right */}
+        <div className="flex-1 flex flex-col justify-between py-0.5 min-w-0">
+          <div>
+            <h4 className="text-xs font-black text-slate-900 dark:text-white line-clamp-2 leading-snug">
+              {part.title}
+            </h4>
+            <div className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-[10px] font-bold border border-blue-200/50">
+              <Car size={10} className="shrink-0" />
+              <span className="truncate max-w-[140px]">{part.carBrand} {part.carModel}</span>
+            </div>
+          </div>
+
+          <div className="mt-1">
+            <div className="text-sm font-black text-blue-600 dark:text-blue-400">
+              ₹{part.price.toLocaleString("en-IN")}
+            </div>
+            <div className="flex items-center justify-between text-[10.5px] mt-0.5 text-slate-500 dark:text-slate-400">
+              <span className="flex items-center gap-1 truncate max-w-[70%]">
+                <MapPin size={10} className={isLocal ? "text-emerald-500 shrink-0" : "text-blue-500 shrink-0"} />
+                <span className="truncate">{part.location || part.district || "India"}</span>
+              </span>
+              <span className={`text-[9.5px] font-bold px-1.5 py-0.5 rounded ${
+                isLocal
+                  ? "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50"
+                  : "bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-200/50"
+              }`}>
+                {isLocal ? "Local" : locBadge.text.includes("km") ? locBadge.text.split("•")[1]?.trim() || "Nearby" : "Nearby"}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const quickCategories = [
     "All Categories",
     ...CAR_PART_CATEGORIES
@@ -303,7 +437,102 @@ export default function SearchScreen({
           }}
           className="px-3 py-3"
         >
-          {filteredParts.length === 0 ? (
+          {!isSearchActive ? (
+            <div className="space-y-6 pb-20 pt-1">
+              {/* 1. Explore by Categories with Logos/Icons */}
+              <div>
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <h3 className="text-sm font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <span className="w-1.5 h-4 bg-blue-600 rounded-full inline-block" />
+                    <span>Explore by Categories</span>
+                  </h3>
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {CAR_PART_CATEGORIES.slice(0, 8).map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedCategory(cat)}
+                      className="flex flex-col items-center justify-center p-2.5 bg-white dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/70 rounded-2xl shadow-2xs hover:shadow-sm active:scale-95 transition-all text-center group cursor-pointer"
+                    >
+                      <div className="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
+                        <Category3DIcon categoryName={cat} size={32} />
+                      </div>
+                      <span className="text-[10.5px] font-bold text-slate-800 dark:text-slate-200 line-clamp-1 leading-tight">
+                        {cat}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 2. Popular Car Brands with Logos */}
+              <div>
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <h3 className="text-sm font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <span className="w-1.5 h-4 bg-amber-500 rounded-full inline-block" />
+                    <span>Popular Car Brands</span>
+                  </h3>
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {["Maruti Suzuki", "Hyundai", "Tata", "Mahindra", "Toyota", "Honda", "Kia", "Volkswagen"].map((brand) => (
+                    <button
+                      key={brand}
+                      onClick={() => setSelectedBrand(brand)}
+                      className="flex flex-col items-center justify-center p-2 bg-white dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/70 rounded-2xl shadow-2xs hover:shadow-sm active:scale-95 transition-all text-center cursor-pointer group"
+                    >
+                      <div className="w-11 h-11 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+                        <BrandLogo brand={brand} size="sm" />
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 line-clamp-1">
+                        {brand}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 3. Browse by City / Location */}
+              <div>
+                <div className="flex items-center justify-between mb-2.5 px-1">
+                  <h3 className="text-sm font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <span className="w-1.5 h-4 bg-emerald-500 rounded-full inline-block" />
+                    <span>Browse by Location</span>
+                  </h3>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {["Chennai", "Coimbatore", "Madurai", "Salem", "Trichy", "Tiruppur", "Erode", "Vellore", "Bengaluru"].map((city) => (
+                    <button
+                      key={city}
+                      onClick={() => setSelectedDistrict(city)}
+                      className="px-3 py-1.5 rounded-full text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-blue-500 active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                      <MapPin size={11} className="text-blue-500" />
+                      <span>{city}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 4. Trending Searches */}
+              <div>
+                <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 px-1 flex items-center gap-1">
+                  <Sparkles size={12} className="text-amber-500" />
+                  <span>Trending Searches</span>
+                </h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {["Swift Bumper", "Creta Headlight", "Thar Grille", "Innova Brake Disc", "Nexon Tail Light", "Brezza Mirror"].map((q) => (
+                    <button
+                      key={q}
+                      onClick={() => setSearchQuery(q)}
+                      className="px-2.5 py-1 rounded-xl text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 active:scale-95 transition-all cursor-pointer"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : filteredParts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
               <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-3">
                 <Search size={26} />
@@ -324,91 +553,42 @@ export default function SearchScreen({
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-2.5 pb-20">
-              {filteredParts.map((part) => {
-                const isFavorite = favorites.includes(part.id);
-                return (
-                  <div
-                    key={part.id}
-                    onClick={() => onViewPart && onViewPart(part)}
-                    className="bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl overflow-hidden flex flex-col cursor-pointer active:scale-[0.98] transition-transform shadow-xs hover:shadow-md"
-                  >
-                    {/* Image Box - 1:1 Aspect Ratio (Square) */}
-                    <div className="relative aspect-square w-full bg-slate-900 overflow-hidden rounded-t-2xl">
-                      {/* Shimmer skeleton before loaded */}
-                      <div className="absolute inset-0 bg-slate-800 animate-pulse pointer-events-none z-0" />
-
-                      <img
-                        src={part.imageUrl || (part.imageUrls && part.imageUrls[0]) || "https://images.unsplash.com/photo-1486006920555-c77dce18193b?auto=format&fit=crop&q=80&w=400"}
-                        alt={part.title}
-                        loading="lazy"
-                        decoding="async"
-                        referrerPolicy="no-referrer"
-                        onLoad={(e) => {
-                          const skeleton = (e.target as HTMLImageElement).parentElement?.querySelector('.animate-pulse');
-                          if (skeleton) skeleton.classList.add('hidden');
-                        }}
-                        onError={(e) => {
-                          const skeleton = (e.target as HTMLImageElement).parentElement?.querySelector('.animate-pulse');
-                          if (skeleton) skeleton.classList.add('hidden');
-                        }}
-                        className="w-full h-full object-cover object-center relative z-1"
-                      />
-                      {/* Price Badge */}
-                      <div className="absolute bottom-2 left-2 bg-slate-950/80 backdrop-blur-md px-2 py-0.5 rounded-lg text-white font-black text-xs z-10">
-                        ₹{part.price.toLocaleString("en-IN")}
-                      </div>
-
-                      {/* Favorite Button */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (onFavoriteToggle) onFavoriteToggle(part.id);
-                        }}
-                        className="absolute top-2 right-2 p-1 text-white hover:scale-110 active:scale-90 transition-transform z-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] cursor-pointer"
-                        aria-label="Toggle Favorite"
-                      >
-                        <Heart
-                          size={18}
-                          fill={isFavorite ? "#EF4444" : "none"}
-                          className={isFavorite ? "text-red-500 stroke-red-500" : "text-white stroke-white"}
-                          strokeWidth={2.2}
-                        />
-                      </button>
-                    </div>
-
-                    {/* Content */}
-                    <div className="p-2.5 flex-1 flex flex-col justify-between">
-                      <div>
-                        <h4 className="text-xs font-bold text-slate-900 dark:text-white line-clamp-1">
-                          {part.title}
-                        </h4>
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1 flex items-center gap-1">
-                          <Car size={11} className="shrink-0 text-blue-500" />
-                          <span>{part.carBrand} {part.carModel}</span>
-                        </p>
-                      </div>
-
-                      {(() => {
-                        const locBadge = formatLocationBadgeWithDistance(part);
-                        return (
-                          <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between">
-                            <span className="text-[10px] text-slate-400 line-clamp-1 flex items-center gap-0.5 max-w-[70%]" title={locBadge.text}>
-                              <MapPin size={10} className="shrink-0 text-blue-500" />
-                              <span className="truncate">{locBadge.text}</span>
-                            </span>
-
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50">
-                              {part.condition.includes("New") ? "New" : "Used"}
-                            </span>
-                          </div>
-                        );
-                      })()}
-                    </div>
+            <div className="flex flex-col gap-4 pb-20">
+              {/* 1. User Location Ads (Shown First) */}
+              {localParts.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-2.5 px-1">
+                    <span className="text-xs font-black text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <span>Available in Your Location ({localParts.length})</span>
+                    </span>
+                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200/50">
+                      Local Matches
+                    </span>
                   </div>
-                );
-              })}
+                  <div className="flex flex-col gap-2.5">
+                    {localParts.map((part) => renderRectangularCard(part, true))}
+                  </div>
+                </div>
+              )}
+
+              {/* 2. Nearby Ads from Surrounding Areas (Shown Second, sorted by distance) */}
+              {nearbyParts.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-2.5 mt-2 px-1">
+                    <span className="text-xs font-black text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-blue-500" />
+                      <span>Nearby Parts from Surrounding Areas ({nearbyParts.length})</span>
+                    </span>
+                    <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded-full border border-blue-200/50">
+                      Nearest First
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-2.5">
+                    {nearbyParts.map((part) => renderRectangularCard(part, false))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </PullToRefresh>

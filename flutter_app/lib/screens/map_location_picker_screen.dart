@@ -55,7 +55,22 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
     'Tiruchirappalli',
     'Tiruppur',
     'Erode',
+    'Vellore',
+    'Tirunelveli',
     'Bengaluru',
+    'Kochi',
+    'Hyderabad',
+    'Mumbai',
+    'Pune',
+    'Delhi NCR',
+    'Ahmedabad',
+    'Kolkata',
+    'Jaipur',
+    'Lucknow',
+    'Chandigarh',
+    'Patna',
+    'Bhopal',
+    'Guwahati',
   ];
 
   @override
@@ -179,7 +194,7 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
     final coords = LocationCoordinatesHelper.getCoordinatesForLocation(hub);
     setState(() {
       _selectedPosition = coords;
-      _resolvedAddress = '$hub, Tamil Nadu';
+      _resolvedAddress = hub;
       _selectedDistrict = hub;
     });
     _mapController?.animateCamera(
@@ -188,15 +203,32 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
     _reverseGeocodePosition(coords);
   }
 
-  void _onSearchSubmitted(String query) {
-    if (query.trim().isEmpty) return;
-    final coords = LocationCoordinatesHelper.getCoordinatesForLocation(query);
+  Future<void> _onSearchSubmitted(String query) async {
+    final clean = query.trim();
+    if (clean.isEmpty) return;
+
+    LatLng coords = LocationCoordinatesHelper.getCoordinatesForLocation(clean);
+    bool isKnownPremapped = LocationCoordinatesHelper.cityCoordinates.containsKey(clean.toLowerCase());
+
+    // If not in offline pre-mapped list, search online for any village, town, or taluk across India
+    if (!isKnownPremapped) {
+      final onlineMatches = await LocationCoordinatesHelper.searchPlacesOnline(clean);
+      if (onlineMatches.isNotEmpty) {
+        final first = onlineMatches.first;
+        final lat = first['lat'] as double?;
+        final lng = first['lng'] as double?;
+        if (lat != null && lng != null && lat != 0.0 && lng != 0.0) {
+          coords = LatLng(lat, lng);
+        }
+      }
+    }
+
     setState(() {
       _selectedPosition = coords;
-      _resolvedAddress = query;
+      _resolvedAddress = clean;
     });
     _mapController?.animateCamera(
-      CameraUpdate.newCameraPosition(CameraPosition(target: coords, zoom: 14.5)),
+      CameraUpdate.newCameraPosition(CameraPosition(target: coords, zoom: 15.0)),
     );
     _reverseGeocodePosition(coords);
   }

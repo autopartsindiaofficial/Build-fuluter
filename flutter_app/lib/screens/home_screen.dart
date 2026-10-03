@@ -4,10 +4,14 @@ import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_colors.dart';
 import '../models/spare_part.dart';
 import '../providers/parts_provider.dart';
 import '../providers/language_provider.dart';
+import '../constants/location_coordinates_helper.dart';
 import '../widgets/product_card.dart';
 import 'search_screen.dart';
 import 'notifications_screen.dart';
@@ -28,6 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final ValueNotifier<int> _currentBannerIndex = ValueNotifier<int>(0);
   Timer? _bannerTimer;
   String _selectedCity = 'All India';
+  Position? _userGpsPosition;
 
   late final Stream<QuerySnapshot> _bannersStream;
   late final Stream<QuerySnapshot> _categoriesStream;
@@ -60,6 +65,46 @@ class _HomeScreenState extends State<HomeScreen> {
     _categoriesStream = _db.collection('topCategories').where('active', isEqualTo: true).snapshots();
     _brandsStream = _db.collection('carBrands').snapshots();
     _startBannerAutoScroll();
+    _loadSavedLocation();
+    _detectUserGpsPosition();
+  }
+
+  Future<void> _loadSavedLocation() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString('user_selected_city');
+      if (saved != null && saved.isNotEmpty && mounted) {
+        setState(() => _selectedCity = saved);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _detectUserGpsPosition() async {
+    try {
+      final perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.always || perm == LocationPermission.whileInUse) {
+        final pos = await Geolocator.getLastKnownPosition();
+        if (pos != null && mounted) {
+          setState(() => _userGpsPosition = pos);
+        }
+      }
+    } catch (_) {}
+  }
+
+  LatLng _getUserReferenceCoords() {
+    if (_userGpsPosition != null) {
+      return LatLng(_userGpsPosition!.latitude, _userGpsPosition!.longitude);
+    }
+    if (_selectedCity != 'All India' && _selectedCity.isNotEmpty) {
+      return LocationCoordinatesHelper.getCoordinatesForLocation(_selectedCity, _selectedCity);
+    }
+    return const LatLng(13.0827, 80.2707); // Default Chennai/TN Hub
+  }
+
+  double _getDistanceInKm(SparePart p, LatLng ref) {
+    final pLat = p.latitude ?? LocationCoordinatesHelper.getCoordinatesForLocation(p.location, p.district).latitude;
+    final pLng = p.longitude ?? LocationCoordinatesHelper.getCoordinatesForLocation(p.location, p.district).longitude;
+    return LocationCoordinatesHelper.calculateDistanceInKm(ref.latitude, ref.longitude, pLat, pLng);
   }
 
   static const Map<String, String> _defaultBrandLogos = {
@@ -183,10 +228,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () async {
                   final result = await Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const LocationSelectScreen()),
+                    MaterialPageRoute(builder: (_) => LocationSelectScreen(selectedLocation: _selectedCity)),
                   );
-                  if (result != null && result is String) {
+                  if (result != null && result is String && mounted) {
                     setState(() => _selectedCity = result);
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setString('user_selected_city', result);
                   }
                 },
                 borderRadius: BorderRadius.circular(20),
@@ -404,7 +451,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     GestureDetector(
                       onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen()));
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => SearchScreen(
+                              initialLocation: _selectedCity != 'All India' ? _selectedCity : null,
+                            ),
+                          ),
+                        );
                       },
                       child: Container(
                         height: 50,
@@ -464,7 +518,10 @@ class _HomeScreenState extends State<HomeScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => SearchScreen(initialQuery: tag),
+                                  builder: (_) => SearchScreen(
+                                    initialQuery: tag,
+                                    initialLocation: _selectedCity != 'All India' ? _selectedCity : null,
+                                  ),
                                 ),
                               );
                             },
@@ -1038,46 +1095,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-            // 5. Parts Grid Header
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 4,
-                      height: 16,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0075FF),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      _selectedCity == 'All India' ? 'Fresh Recommendations' : 'Spares in $_selectedCity',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
-                    ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.verified_rounded, size: 12, color: Color(0xFF10B981)),
-                          SizedBox(width: 4),
-                          Text('100% Genuine', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF475569))),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // 6. Parts Grid (Real-time Stream from Firestore with ProductCard)
+            // 6. Parts Grid (Real-time Stream from Firestore with Location-Aware Prioritization)
             StreamBuilder<List<SparePart>>(
               stream: partsProvider.partsStream,
               builder: (context, snapshot) {
@@ -1089,18 +1107,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 }
 
-                var parts = snapshot.data ?? [];
+                var allParts = snapshot.data ?? [];
 
-                // Filter by selected city if not All India
-                if (_selectedCity != 'All India') {
-                  final cityQuery = _selectedCity.toLowerCase();
-                  parts = parts.where((p) {
-                    final loc = (p.location + ' ' + p.district).toLowerCase();
-                    return loc.contains(cityQuery);
-                  }).toList();
-                }
+                // Filter out deleted/inactive parts
+                allParts = allParts.where((p) {
+                  if (p.isDeleted == true) return false;
+                  final s = p.status.toLowerCase().trim();
+                  return s != 'inactive' && s != 'rejected' && s != 'deleted' && s != 'hidden';
+                }).toList();
 
-                if (parts.isEmpty) {
+                if (allParts.isEmpty) {
                   return SliverFillRemaining(
                     hasScrollBody: false,
                     child: Center(
@@ -1111,8 +1127,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             Container(
                               padding: const EdgeInsets.all(20),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF1F5F9),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFF1F5F9),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(Icons.car_crash_rounded, size: 48, color: Color(0xFF94A3B8)),
@@ -1150,22 +1166,208 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 }
 
+                final userRefCoords = _getUserReferenceCoords();
+                final userCityQuery = _selectedCity.trim().toLowerCase();
+                final primaryUserCity = userCityQuery.split(',').first.trim();
+
+                final List<SparePart> localParts = [];
+                final List<SparePart> nearbyParts = [];
+
+                if (_selectedCity == 'All India') {
+                  if (_userGpsPosition != null) {
+                    for (var p in allParts) {
+                      final dist = _getDistanceInKm(p, userRefCoords);
+                      if (dist <= 25.0) {
+                        localParts.add(p);
+                      } else {
+                        nearbyParts.add(p);
+                      }
+                    }
+                  } else {
+                    localParts.addAll(allParts);
+                  }
+                } else {
+                  for (var p in allParts) {
+                    final pLoc = '${p.location} ${p.district}'.toLowerCase();
+                    final dist = _getDistanceInKm(p, userRefCoords);
+                    if (pLoc.contains(userCityQuery) || pLoc.contains(primaryUserCity) || primaryUserCity.contains(p.district.toLowerCase()) || dist <= 25.0) {
+                      localParts.add(p);
+                    } else {
+                      nearbyParts.add(p);
+                    }
+                  }
+                }
+
+                // Sort local parts: unsold first, then newest
+                localParts.sort((a, b) {
+                  if (a.isSold != b.isSold) return a.isSold ? 1 : -1;
+                  return b.createdAt.compareTo(a.createdAt);
+                });
+
+                // Sort nearby parts: ALWAYS by closest distance first!
+                nearbyParts.sort((a, b) {
+                  if (a.isSold != b.isSold) return a.isSold ? 1 : -1;
+                  final distA = _getDistanceInKm(a, userRefCoords);
+                  final distB = _getDistanceInKm(b, userRefCoords);
+                  return distA.compareTo(distB);
+                });
+
                 final screenWidth = MediaQuery.of(context).size.width;
                 final crossAxisCount = screenWidth >= 900 ? 4 : (screenWidth >= 600 ? 3 : 2);
                 final childAspectRatio = screenWidth < 360 ? 0.65 : 0.70;
 
-                return SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
-                  sliver: SliverGrid(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: crossAxisCount,
-                      childAspectRatio: childAspectRatio,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) => ProductCard(part: parts[index]),
-                      childCount: parts.length,
+                return SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 1. Local Ads Section (User's location first)
+                        if (localParts.isNotEmpty) ...[
+                          Row(
+                            children: [
+                              Container(
+                                width: 4,
+                                height: 16,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF0075FF),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _selectedCity == 'All India' ? 'Fresh Recommendations' : 'Spares in $_selectedCity (${localParts.length})',
+                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.verified_rounded, size: 12, color: Color(0xFF10B981)),
+                                    SizedBox(width: 4),
+                                    Text('100% Genuine', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF475569))),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: localParts.length,
+                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: crossAxisCount,
+                              childAspectRatio: childAspectRatio,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                            ),
+                            itemBuilder: (context, index) {
+                              final p = localParts[index];
+                              return ProductCard(
+                                part: p,
+                                distanceInKm: _getDistanceInKm(p, userRefCoords),
+                              );
+                            },
+                          ),
+                        ] else if (_selectedCity != 'All India') ...[
+                          // Notice banner when 0 exact listings in city
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: const Color(0xFFBFDBFE)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.info_outline_rounded, color: Color(0xFF0075FF), size: 20),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'No listings inside $_selectedCity yet',
+                                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF1E3A8A)),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      const Text(
+                                        'Showing closest spare parts available from nearby areas (sorted by proximity):',
+                                        style: TextStyle(fontSize: 11.5, color: Color(0xFF3B82F6), fontWeight: FontWeight.w500),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+
+                        // 2. Nearby Spares Section (Pakkathu ads sorted by proximity)
+                        if (nearbyParts.isNotEmpty) ...[
+                          const SizedBox(height: 20),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEFF6FF),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Icon(Icons.near_me_rounded, color: Color(0xFF0075FF), size: 14),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Nearby Parts from Surrounding Areas (${nearbyParts.length})',
+                                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      _selectedCity == 'All India' ? 'Sorted by closest distance to you' : 'Closest parts neighboring $_selectedCity',
+                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFF64748B)),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: nearbyParts.length,
+                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: crossAxisCount,
+                              childAspectRatio: childAspectRatio,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                            ),
+                            itemBuilder: (context, index) {
+                              final p = nearbyParts[index];
+                              return ProductCard(
+                                part: p,
+                                distanceInKm: _getDistanceInKm(p, userRefCoords),
+                              );
+                            },
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 );

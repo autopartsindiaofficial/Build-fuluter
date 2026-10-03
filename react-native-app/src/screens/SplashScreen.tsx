@@ -175,27 +175,20 @@ export default function SplashScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0075FF" translucent={false} />
+      <StatusBar barStyle="light-content" backgroundColor="#25242E" translucent={false} />
 
       <SafeAreaView style={styles.safeArea}>
-        <View style={{ flex: 1 }} />
-
-        {/* CENTER EMBLEM & TYPOGRAPHY MATCHING REFERENCE IMAGE */}
         <Animated.View 
           style={[
-            styles.centerBrandBlock, 
+            styles.imageWrapper, 
             { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }
           ]}
         >
-          {/* Crisp High-Res Brand Mark that exactly matches reference image with no collapse */}
-          <AppLogo width={Math.min(screenWidth * 0.72, 260)} height={Math.round(Math.min(screenWidth * 0.72, 260) * 0.72)} />
-        </Animated.View>
-
-        <View style={{ flex: 1 }} />
-
-        {/* FOOTER TAGLINE MATCHING EXACT REFERENCE IMAGE */}
-        <Animated.View style={[styles.footerBlock, { opacity: footerFade }]}>
-          <Text style={styles.footerTagline}>India’s leading marketplace</Text>
+          <Image 
+            source={require('../assets/splash_reference.png')}
+            style={styles.splashImage}
+            resizeMode="contain"
+          />
         </Animated.View>
       </SafeAreaView>
     </View>
@@ -205,38 +198,22 @@ export default function SplashScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0075FF', // Vibrant Electric Royal Blue matching reference image
+    backgroundColor: '#25242E', // Exact dark slate background from reference image
   },
   safeArea: {
     flex: 1,
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingBottom: 44,
-  },
-  centerBrandBlock: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  imageWrapper: {
     width: '100%',
-  },
-  brandLogoImage: {
-    width: 240,
-    height: 240,
-    resizeMode: 'contain',
-  },
-  footerBlock: {
+    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
-    marginBottom: 12,
   },
-  footerTagline: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    fontWeight: '400',
-    textAlign: 'center',
-    letterSpacing: 0.2,
-    opacity: 0.96,
+  splashImage: {
+    width: '100%',
+    height: '100%',
   },
 });
 

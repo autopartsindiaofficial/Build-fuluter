@@ -1223,54 +1223,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     onMapCreated: (ctrl) => _mapController = ctrl,
                     onTap: (_) => _openFullScreenMap(),
                   ),
-
-                  // Floating controls on map
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: InkWell(
-                      onTap: _openFullScreenMap,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.95),
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 4, offset: const Offset(0, 1)),
-                          ],
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.fullscreen_rounded, size: 16, color: Color(0xFF0F172A)),
-                            SizedBox(width: 4),
-                            Text('Expand Map', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Center pin indicator helper
-                  Positioned(
-                    left: 10,
-                    bottom: 10,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0F172A).withOpacity(0.85),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.touch_app_rounded, size: 12, color: Colors.white70),
-                          SizedBox(width: 4),
-                          Text('Tap map to explore', style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w600)),
-                        ],
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),

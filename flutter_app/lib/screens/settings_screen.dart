@@ -15,7 +15,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _notificationsEnabled = true;
   bool _locationEnabled = true;
   bool _soundEnabled = true;
-  String _cacheSize = '3.8 MB';
 
   @override
   void initState() {
@@ -48,53 +47,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _soundEnabled = val);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('pref_sound', val);
-  }
-
-  void _clearCache() async {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: const [
-            Icon(Icons.cleaning_services_rounded, color: Color(0xFF0075FF), size: 22),
-            SizedBox(width: 8),
-            Text('Free Up Storage', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
-          ],
-        ),
-        content: const Text(
-          'This will remove temporary preview images to save space. Your account, listings, and messages will not be affected.',
-          style: TextStyle(fontSize: 13, color: Color(0xFF475569), height: 1.4),
-        ),
-        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              setState(() => _cacheSize = '0 KB');
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('✨ Storage cleaned successfully!'),
-                  backgroundColor: Color(0xFF10B981),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0075FF),
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            child: const Text('Clean Now', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -182,47 +134,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 20),
 
-          // 2. Storage Section
-          Row(
-            children: [
-              Container(width: 4, height: 16, decoration: BoxDecoration(color: const Color(0xFF0075FF), borderRadius: BorderRadius.circular(2))),
-              const SizedBox(width: 8),
-              const Text('Storage & Space', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF0F172A))),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: const Color(0xFF64748B).withOpacity(0.1), shape: BoxShape.circle),
-                child: const Icon(Icons.cleaning_services_rounded, color: Color(0xFF64748B), size: 20),
-              ),
-              title: const Text('Free Up Space', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-              subtitle: Text('Temporary image files: $_cacheSize', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-              trailing: ElevatedButton(
-                onPressed: _clearCache,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0075FF),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                child: const Text('Clean', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // 3. About Section
+          // 2. About Section
           Row(
             children: [
               Container(width: 4, height: 16, decoration: BoxDecoration(color: const Color(0xFF0075FF), borderRadius: BorderRadius.circular(2))),

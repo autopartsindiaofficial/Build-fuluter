@@ -65,7 +65,7 @@
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyD-GoogleMapsApiKeyAutoPartsIndia" />
+            android:value="AIzaSyCg5wTIOXxnQ0eZ4GzgN29BGuiX7MpH8uI" />
     </application>
 
     <queries>
