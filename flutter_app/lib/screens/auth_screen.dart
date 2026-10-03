@@ -597,9 +597,8 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
         ),
       ),
     ),
-  ),
-);
-  }
+  );
+}
 }
 
 // Google 4-Color 'G' Icon Painter
