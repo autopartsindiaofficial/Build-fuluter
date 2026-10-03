@@ -123,7 +123,10 @@ class _NearbyMapScreenState extends State<NearbyMapScreen> {
         .snapshots()
         .listen(
       (snapshot) {
-        final parts = snapshot.docs.map((doc) => SparePart.fromFirestore(doc)).toList();
+        final parts = snapshot.docs
+            .map((doc) => SparePart.fromFirestore(doc))
+            .where((p) => !p.isSold && p.status != 'sold' && p.status != 'inactive' && p.status != 'rejected')
+            .toList();
 
         // Sort parts by proximity to _currentCenter
         parts.sort((a, b) {

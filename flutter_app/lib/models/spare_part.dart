@@ -191,7 +191,7 @@ class SparePart {
       sellerId: data['sellerId'] ?? data['userId'] ?? '',
       sellerEmail: data['sellerEmail'] ?? data['email'],
       createdAt: created,
-      isSold: data['isSold'] == true || data['sold'] == true,
+      isSold: data['isSold'] == true || data['sold'] == true || (data['status']?.toString().toLowerCase() == 'sold'),
       verified: data['verified'] != false,
       views: data['views'] is int ? data['views'] : 0,
       oemNumber: data['oemNumber'],

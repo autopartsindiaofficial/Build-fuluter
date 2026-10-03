@@ -187,7 +187,7 @@ export default function SplashScreen({ navigation }: any) {
           <Image 
             source={require('../assets/splash_reference.png')}
             style={styles.splashImage}
-            resizeMode="contain"
+            resizeMode="cover"
           />
         </Animated.View>
       </SafeAreaView>

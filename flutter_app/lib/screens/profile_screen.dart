@@ -119,6 +119,15 @@ class ProfileScreen extends StatelessWidget {
             onPressed: () async {
               Navigator.pop(ctx);
               await auth.signOut();
+              if (context.mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  PageRouteBuilder(
+                    pageBuilder: (_, __, ___) => const AuthScreen(),
+                    transitionsBuilder: (_, a, __, c) => FadeTransition(opacity: a, child: c),
+                  ),
+                  (route) => false,
+                );
+              }
             },
             child: const Text('Sign Out', style: TextStyle(fontWeight: FontWeight.bold)),
           ),

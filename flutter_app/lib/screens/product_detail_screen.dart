@@ -38,6 +38,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   GoogleMapController? _mapController;
   late LatLng _partLocation;
   double? _distanceInKm;
+  late bool _isSoldLocal;
 
   FirebaseFirestore get _db {
     try {
@@ -53,8 +54,40 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _isSoldLocal = widget.part.isSold;
     _initPartLocation();
     _incrementViewCount();
+  }
+
+  Future<void> _handleToggleSold() async {
+    final nextSold = !_isSoldLocal;
+    try {
+      setState(() => _isSoldLocal = nextSold);
+      await _db.collection('spareParts').doc(widget.part.id).update({
+        'status': nextSold ? 'sold' : 'approved',
+        'isSold': nextSold,
+        'sold': nextSold,
+        'approved': true,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(nextSold ? '🎉 Ad marked as Sold & hidden from marketplace feed!' : '✨ Ad marked as Active & live in marketplace!'),
+            backgroundColor: nextSold ? const Color(0xFFD97706) : const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSoldLocal = !nextSold);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update status: $e')),
+        );
+      }
+    }
   }
 
   void _initPartLocation() {
@@ -975,23 +1008,46 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: isOwner
-                // Owner Controls
+                // Owner Controls: Delete, Mark Sold/Active, and Edit
                 ? Row(
                     children: [
+                      // 1. Delete Ad Button
+                      IconButton(
+                        style: IconButton.styleFrom(
+                          backgroundColor: const Color(0xFFFEE2E2),
+                          foregroundColor: const Color(0xFFEF4444),
+                          padding: const EdgeInsets.all(12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        icon: const Icon(Icons.delete_outline_rounded, size: 22),
+                        tooltip: 'Delete Ad',
+                        onPressed: _handleDeleteAd,
+                      ),
+                      const SizedBox(width: 8),
+
+                      // 2. Mark Sold / Mark Active Toggle Button
                       Expanded(
                         child: OutlinedButton.icon(
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
-                            foregroundColor: const Color(0xFFEF4444),
+                            side: BorderSide(
+                              color: _isSoldLocal ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                              width: 1.5,
+                            ),
+                            foregroundColor: _isSoldLocal ? const Color(0xFF10B981) : const Color(0xFFD97706),
                             padding: const EdgeInsets.symmetric(vertical: 13),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                           ),
-                          icon: const Icon(Icons.delete_outline_rounded),
-                          label: const Text('Delete Ad', style: TextStyle(fontWeight: FontWeight.w800)),
-                          onPressed: _handleDeleteAd,
+                          icon: Icon(_isSoldLocal ? Icons.check_circle_outline_rounded : Icons.monetization_on_outlined, size: 18),
+                          label: Text(
+                            _isSoldLocal ? 'Mark Active' : 'Mark Sold',
+                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                          ),
+                          onPressed: _handleToggleSold,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 8),
+
+                      // 3. Edit Listing Button
                       Expanded(
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
@@ -1001,8 +1057,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                             elevation: 0,
                           ),
-                          icon: const Icon(Icons.edit_rounded),
-                          label: const Text('Edit Listing', style: TextStyle(fontWeight: FontWeight.w800)),
+                          icon: const Icon(Icons.edit_rounded, size: 18),
+                          label: const Text('Edit Listing', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
                           onPressed: () {
                             Navigator.push(
                               context,
@@ -1013,8 +1069,28 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ],
                   )
-                // Buyer Controls (Direct Call, Make Offer, Chat)
-                : Row(
+                // Buyer Controls (Direct Call, Make Offer, Chat OR Sold Banner)
+                : _isSoldLocal
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF3C7),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFFCD34D)),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.info_outline_rounded, color: Color(0xFFD97706), size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              'This spare part has been sold out 🎉',
+                              style: TextStyle(color: Color(0xFFB45309), fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                          ],
+                        ),
+                      )
+                    : Row(
                     children: [
                       // Direct Call Phone Dialer
                       if (widget.part.contactPhone != null && widget.part.contactPhone!.isNotEmpty)

@@ -45,17 +45,19 @@ class _MyAdsScreenState extends State<MyAdsScreen> {
   Future<void> _toggleSoldStatus(String partId, bool currentlySold) async {
     try {
       await _db.collection('spareParts').doc(partId).update({
-        'status': currentlySold ? 'active' : 'sold',
+        'status': currentlySold ? 'approved' : 'sold',
         'isSold': !currentlySold,
         'sold': !currentlySold,
+        'approved': true,
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(currentlySold ? 'Ad marked as Active' : 'Ad marked as Sold'),
-            backgroundColor: const Color(0xFF10B981),
+            content: Text(currentlySold ? '✨ Ad marked as Active & live in marketplace' : '🎉 Ad marked as Sold & removed from marketplace feed'),
+            backgroundColor: currentlySold ? const Color(0xFF10B981) : const Color(0xFFD97706),
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }

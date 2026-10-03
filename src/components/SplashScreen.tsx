@@ -85,7 +85,7 @@ export default function SplashScreen({
               <img 
                 src="/assets/splash_reference.png" 
                 alt="Auto Parts India" 
-                className="w-full h-full object-contain pointer-events-none select-none drop-shadow-2xl"
+                className="w-full h-full object-cover pointer-events-none select-none drop-shadow-2xl"
                 draggable={false}
               />
             </picture>

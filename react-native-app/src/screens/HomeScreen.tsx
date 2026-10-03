@@ -973,11 +973,11 @@ export default function HomeScreen({ navigation, route, user: propUser }: any) {
         <View style={styles.topBar}>
           {/* Brand Title & Location */}
           <View style={styles.brandTitleRow}>
+            <Image 
+              source={require('../assets/header_logo.png')}
+              style={{ width: 105, height: 32, resizeMode: 'contain', marginRight: 8 }}
+            />
             <View style={styles.brandTextCol}>
-              <View style={styles.brandRow}>
-                <Text style={styles.brandAutoParts}>Auto Parts </Text>
-                <Text style={styles.brandIndia}>India</Text>
-              </View>
               {/* Location Selector */}
               <ScalePressable 
                 style={styles.locationButton}

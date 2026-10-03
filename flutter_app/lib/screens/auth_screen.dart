@@ -54,17 +54,13 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
         duration: Duration(seconds: 2),
       ),
     );
-    if (Navigator.canPop(context)) {
-      Navigator.pop(context, true);
-    } else {
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (_, __, ___) => const MainNavScreen(),
-          transitionsBuilder: (_, a, __, c) => FadeTransition(opacity: a, child: c),
-        ),
-      );
-    }
+    Navigator.of(context).pushAndRemoveUntil(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => const MainNavScreen(),
+        transitionsBuilder: (_, a, __, c) => FadeTransition(opacity: a, child: c),
+      ),
+      (route) => false,
+    );
   }
 
   Future<void> _handleGoogleSignIn() async {
@@ -226,72 +222,81 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     final canGoBack = Navigator.canPop(context);
+    final screenHeight = MediaQuery.of(context).size.height;
+    final heroHeight = (screenHeight * 0.28).clamp(150.0, 240.0);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
         top: false,
         child: FadeTransition(
           opacity: _fadeAnim,
-          child: Column(
-            children: [
-              // 1. TOP HERO ARTWORK FROM REFERENCE IMAGE
-              Stack(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Column(
                 children: [
-                  Container(
-                    width: double.infinity,
-                    color: const Color(0xFF0F172A),
-                    child: Image.asset(
-                      'assets/images/signin_hero.png',
-                      width: double.infinity,
-                      fit: BoxFit.fitWidth,
-                      errorBuilder: (_, __, ___) {
-                        // Fallback to reference asset
-                        return Image.asset(
-                          'assets/images/splash_reference.png',
+                  // 1. TOP HERO ARTWORK FROM REFERENCE IMAGE (Responsive Height)
+                  Stack(
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        height: heroHeight,
+                        color: const Color(0xFF0F172A),
+                        child: Image.asset(
+                          'assets/images/signin_hero.png',
                           width: double.infinity,
-                          height: 240,
+                          height: heroHeight,
                           fit: BoxFit.cover,
-                        );
-                      },
-                    ),
-                  ),
-
-                  // Optional Back Button
-                  if (canGoBack)
-                    Positioned(
-                      top: 40,
-                      left: 16,
-                      child: InkWell(
-                        onTap: () => Navigator.pop(context),
-                        borderRadius: BorderRadius.circular(20),
-                        child: Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.4),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
+                          errorBuilder: (_, __, ___) {
+                            // Fallback to reference asset
+                            return Image.asset(
+                              'assets/images/splash_reference.png',
+                              width: double.infinity,
+                              height: heroHeight,
+                              fit: BoxFit.cover,
+                            );
+                          },
                         ),
                       ),
-                    ),
-                ],
-              ),
 
-              // 2. BOTTOM WHITE SHEET SIGN-IN CARD MATCHING REFERENCE IMAGE
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                      // Optional Back Button
+                      if (canGoBack)
+                        Positioned(
+                          top: 40,
+                          left: 16,
+                          child: InkWell(
+                            onTap: () => Navigator.pop(context),
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.4),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+
+                  // 2. BOTTOM WHITE SHEET SIGN-IN CARD MATCHING REFERENCE IMAGE
+                  Expanded(
+                    child: Container(
+                      width: double.infinity,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                      ),
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                         // Typography matching reference image
                         Text(
                           _isSignUp ? 'Create Account on' : 'Welcome to',
@@ -553,7 +558,9 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
           ),
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }
 

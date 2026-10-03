@@ -193,30 +193,19 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         title: Row(
           children: [
-            // Automotive Emblem Badge
-            Container(
-              width: 38,
+            // Official Brand Header Logo
+            Image.asset(
+              'assets/images/header_logo.png',
               height: 38,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF0075FF), Color(0xFF0052B4)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF0075FF).withOpacity(0.24),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.directions_car_filled_rounded,
-                  color: Colors.white,
-                  size: 22,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => Image.asset(
+                'assets/header_logo.png',
+                height: 38,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => Image.asset(
+                  'assets/brand_logo.png',
+                  height: 38,
+                  fit: BoxFit.contain,
                 ),
               ),
             ),
@@ -1109,11 +1098,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 var allParts = snapshot.data ?? [];
 
-                // Filter out deleted/inactive parts
+                // Filter out deleted, inactive, or SOLD parts from public marketplace feed
                 allParts = allParts.where((p) {
                   if (p.isDeleted == true) return false;
+                  if (p.isSold == true) return false;
                   final s = p.status.toLowerCase().trim();
-                  return s != 'inactive' && s != 'rejected' && s != 'deleted' && s != 'hidden';
+                  return s != 'inactive' && s != 'rejected' && s != 'deleted' && s != 'hidden' && s != 'sold';
                 }).toList();
 
                 if (allParts.isEmpty) {
@@ -1198,15 +1188,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   }
                 }
 
-                // Sort local parts: unsold first, then newest
-                localParts.sort((a, b) {
-                  if (a.isSold != b.isSold) return a.isSold ? 1 : -1;
-                  return b.createdAt.compareTo(a.createdAt);
-                });
+                // Sort local parts: newest first
+                localParts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
                 // Sort nearby parts: ALWAYS by closest distance first!
                 nearbyParts.sort((a, b) {
-                  if (a.isSold != b.isSold) return a.isSold ? 1 : -1;
                   final distA = _getDistanceInKm(a, userRefCoords);
                   final distB = _getDistanceInKm(b, userRefCoords);
                   return distA.compareTo(distB);

@@ -29,10 +29,11 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
-  Timer? _initialTimer;
+  late AnimationController _progressController;
+  late Animation<double> _progressAnimation;
   Timer? _fallbackTimer;
   bool _hasProceeded = false;
 
@@ -51,12 +52,14 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   void initState() {
     super.initState();
 
-    // Match Android Status & Navigation Bars to Dark Slate #25242E Splash
+    // Enable Edge-to-Edge full screen rendering
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: Color(0xFF25242E),
+      systemNavigationBarColor: Colors.transparent,
       systemNavigationBarIconBrightness: Brightness.light,
+      systemNavigationBarDividerColor: Colors.transparent,
     ));
 
     _animController = AnimationController(
@@ -66,17 +69,34 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     _fadeAnimation = CurvedAnimation(parent: _animController, curve: Curves.easeIn);
     _animController.forward();
 
-    // Fast, seamless initialization
-    _initialTimer = Timer(const Duration(milliseconds: 650), () {
-      if (mounted) _checkAppUpdate();
+    // Real, smooth loading progress bar animation (0% -> 100%)
+    _progressController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+    _progressAnimation = CurvedAnimation(
+      parent: _progressController,
+      curve: Curves.easeInOutCubic,
+    );
+    _progressController.forward();
+
+    _progressController.addStatusListener((status) {
+      if (status == AnimationStatus.completed && mounted) {
+        _checkAppUpdate();
+      }
+    });
+
+    // Hard fallback safety timer
+    _fallbackTimer = Timer(const Duration(milliseconds: 2600), () {
+      _safeProceed();
     });
   }
 
   @override
   void dispose() {
-    _initialTimer?.cancel();
     _fallbackTimer?.cancel();
     _animController.dispose();
+    _progressController.dispose();
     super.dispose();
   }
 
@@ -204,38 +224,41 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF25242E), // Exact background color matching reference image
+      backgroundColor: const Color(0xFF0F172A),
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: const SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
           statusBarIconBrightness: Brightness.light,
-          systemNavigationBarColor: Color(0xFF25242E),
+          systemNavigationBarColor: Colors.transparent,
           systemNavigationBarIconBrightness: Brightness.light,
+          systemNavigationBarDividerColor: Colors.transparent,
         ),
         child: SizedBox.expand(
           child: Stack(
             fit: StackFit.expand,
             alignment: Alignment.center,
             children: [
-              // Exact Reference Image Splash Screen
+              // Full Screen Edge-to-Edge Splash Screen
               FadeTransition(
                 opacity: _fadeAnimation,
-                child: Center(
-                  child: Image.asset(
-                    'assets/images/splash_reference.png',
-                    fit: BoxFit.contain,
-                    width: double.infinity,
-                    height: double.infinity,
-                    errorBuilder: (context, error, stackTrace) {
-                      // Graceful fallback to root assets path if nested path fails
-                      return Image.asset(
-                        'assets/splash_reference.png',
-                        fit: BoxFit.contain,
-                        width: double.infinity,
-                        height: double.infinity,
-                        errorBuilder: (_, __, ___) {
-                          // Beautiful vector fallback with identical styling
-                          return Column(
+                child: Image.asset(
+                  'assets/images/splash_reference.png',
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                  alignment: Alignment.center,
+                  errorBuilder: (context, error, stackTrace) {
+                    // Graceful fallback to root assets path if nested path fails
+                    return Image.asset(
+                      'assets/splash_reference.png',
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      alignment: Alignment.center,
+                      errorBuilder: (_, __, ___) {
+                        // Beautiful vector fallback with identical styling
+                        return Center(
+                          child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Container(
@@ -295,27 +318,74 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                                 ),
                               ),
                             ],
-                          );
-                        },
-                      );
-                    },
-                  ),
+                          ),
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
 
-              // Subtle bottom loading spinner matching brand orange
+              // Live, Smooth, Animated Loading Progress Bar
               Positioned(
-                bottom: 36,
+                bottom: MediaQuery.of(context).size.height * 0.11,
                 child: SafeArea(
                   child: FadeTransition(
                     opacity: _fadeAnimation,
-                    child: const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: Color(0xFFFF7300),
-                        strokeWidth: 2.2,
-                      ),
+                    child: AnimatedBuilder(
+                      animation: _progressAnimation,
+                      builder: (context, _) {
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Progress Bar Track & Live Indicator
+                            Container(
+                              width: 220,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.18),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: FractionallySizedBox(
+                                  widthFactor: _progressAnimation.value.clamp(0.06, 1.0),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [Color(0xFFFFB300), Color(0xFFFF5500)],
+                                      ),
+                                      borderRadius: BorderRadius.circular(10),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(0xFFFF6D00).withOpacity(0.7),
+                                          blurRadius: 10,
+                                          spreadRadius: 1,
+                                          offset: const Offset(0, 1),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Loading...',
+                              style: TextStyle(
+                                color: Color(0xFFE2E8F0),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ),

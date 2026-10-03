@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/language_provider.dart';
+import 'auth_screen.dart';
 import 'home_screen.dart';
 import 'chats_screen.dart';
 import 'sell_part_screen.dart';
@@ -18,6 +20,7 @@ class MainNavScreen extends StatefulWidget {
 
 class _MainNavScreenState extends State<MainNavScreen> {
   int _currentIndex = 0;
+  StreamSubscription<User?>? _authSubscription;
 
   final List<Widget> _screens = [
     const HomeScreen(),
@@ -26,6 +29,29 @@ class _MainNavScreenState extends State<MainNavScreen> {
     const MyAdsScreen(),
     const ProfileScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Strict Authentication Guard: If user is not signed in, redirect to AuthScreen immediately
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (user == null && mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => const AuthScreen(),
+            transitionsBuilder: (_, a, __, c) => FadeTransition(opacity: a, child: c),
+          ),
+          (route) => false,
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
+  }
 
   FirebaseFirestore get _db {
     try {

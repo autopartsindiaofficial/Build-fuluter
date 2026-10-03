@@ -1195,11 +1195,12 @@ class _SearchScreenState extends State<SearchScreen> {
 
               var parts = snapshot.data!.docs.map((d) => SparePart.fromFirestore(d)).toList();
 
-              // 1. Core Validity & Deletion Filter (Accurate ad display logic)
+              // 1. Core Validity & Deletion Filter (Accurate ad display logic - strictly hide sold/deleted)
               parts = parts.where((p) {
                 if (p.isDeleted == true) return false;
+                if (p.isSold == true) return false;
                 final s = p.status.toLowerCase().trim();
-                if (s == 'inactive' || s == 'rejected' || s == 'deleted' || s == 'hidden') return false;
+                if (s == 'inactive' || s == 'rejected' || s == 'deleted' || s == 'hidden' || s == 'sold') return false;
                 return true;
               }).toList();
 
