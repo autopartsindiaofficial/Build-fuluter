@@ -75,11 +75,22 @@ class AppAuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> signUpWithEmail(String email, String password, String name) async {
+  Future<void> signUpWithEmail(String email, String password, [String name = 'Auto Enthusiast']) async {
     _isLoading = true;
     notifyListeners();
     try {
       await _authService.signUpWithEmail(email, password, name);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> sendPasswordReset(String email) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await _authService.sendPasswordReset(email);
     } finally {
       _isLoading = false;
       notifyListeners();

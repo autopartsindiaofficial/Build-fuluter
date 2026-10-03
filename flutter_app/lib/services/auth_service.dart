@@ -50,13 +50,19 @@ class AuthService {
   }
 
   // Email & Password Sign Up
-  Future<UserCredential> signUpWithEmail(String email, String password, String name) async {
+  Future<UserCredential> signUpWithEmail(String email, String password, [String name = 'Auto Enthusiast']) async {
     final cred = await _auth.createUserWithEmailAndPassword(email: email, password: password);
     if (cred.user != null) {
-      await cred.user!.updateDisplayName(name);
-      await _saveUserProfile(cred.user!, customName: name);
+      final displayName = name.trim().isNotEmpty ? name.trim() : 'Auto Enthusiast';
+      await cred.user!.updateDisplayName(displayName);
+      await _saveUserProfile(cred.user!, customName: displayName);
     }
     return cred;
+  }
+
+  // Password Reset
+  Future<void> sendPasswordReset(String email) async {
+    await _auth.sendPasswordResetEmail(email: email.trim());
   }
 
   // Save/Update User Profile in Firestore

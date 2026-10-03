@@ -115,7 +115,8 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     try {
       final auth = Provider.of<AppAuthProvider>(context, listen: false);
       if (_isSignUp) {
-        await auth.signUpWithEmail(email, password, name.isNotEmpty ? name : null);
+        final displayName = name.isNotEmpty ? name : 'Auto Enthusiast';
+        await auth.signUpWithEmail(email, password, displayName);
       } else {
         await auth.signInWithEmail(email, password);
       }

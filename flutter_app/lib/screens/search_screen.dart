@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../constants/app_colors.dart';
 import '../models/spare_part.dart';
 import '../providers/language_provider.dart';
@@ -1662,7 +1663,9 @@ class _SearchScreenState extends State<SearchScreen> {
                           child: Text(
                             isLocal
                                 ? '${part.location.split(',').first.trim()} • Local Area'
-                                : '${part.location.split(',').first.trim()} • ${distance.toStringAsFixed(0)} km away',
+                                : (distance != null
+                                    ? '${part.location.split(',').first.trim()} • ${distance.toStringAsFixed(0)} km away'
+                                    : part.location.split(',').first.trim()),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -1694,7 +1697,9 @@ class _SearchScreenState extends State<SearchScreen> {
                               border: Border.all(color: const Color(0xFFBFDBFE), width: 0.8),
                             ),
                             child: Text(
-                              '${distance.toStringAsFixed(0)} km',
+                              distance != null
+                                  ? '${distance.toStringAsFixed(0)} km'
+                                  : 'Nearby',
                               style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF1D4ED8)),
                             ),
                           ),
