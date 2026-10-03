@@ -516,10 +516,15 @@ class _SellPartScreenState extends State<SellPartScreen> {
         'images': finalImages,
         'sellerId': user!.uid,
         'sellerEmail': user.email ?? '',
+        'sellerPhoto': auth.userProfile?.photoURL ?? user.photoURL ?? '',
         'createdAt': FieldValue.serverTimestamp(),
         'oemNumber': _oemCtrl.text.trim(),
         'views': 0,
-        'status': 'active',
+        'status': 'approved',
+        'approved': true,
+        'isSold': false,
+        'sold': false,
+        'isDeleted': false,
         'verified': true,
       };
 

@@ -223,48 +223,85 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     final canGoBack = Navigator.canPop(context);
     final screenHeight = MediaQuery.of(context).size.height;
-    final heroHeight = (screenHeight * 0.28).clamp(150.0, 240.0);
+    final topPadding = MediaQuery.of(context).padding.top;
+    final heroHeight = (screenHeight * 0.22).clamp(130.0, 190.0);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
       resizeToAvoidBottomInset: true,
-      body: SafeArea(
-        top: false,
-        child: FadeTransition(
-          opacity: _fadeAnim,
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: Column(
-                children: [
-                  // 1. TOP HERO ARTWORK FROM REFERENCE IMAGE (Responsive Height)
-                  Stack(
+      body: FadeTransition(
+        opacity: _fadeAnim,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: Column(
+              children: [
+                // 1. TOP HERO WITH SAFE AREA & CLEAR BRAND LOGO
+                Container(
+                  width: double.infinity,
+                  height: heroHeight + topPadding,
+                  color: const Color(0xFF0A101D),
+                  child: Stack(
+                    fit: StackFit.expand,
                     children: [
-                      Container(
+                      Image.asset(
+                        'assets/images/signin_hero.png',
                         width: double.infinity,
-                        height: heroHeight,
-                        color: const Color(0xFF0F172A),
-                        child: Image.asset(
-                          'assets/images/signin_hero.png',
-                          width: double.infinity,
-                          height: heroHeight,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) {
-                            // Fallback to reference asset
-                            return Image.asset(
-                              'assets/images/splash_reference.png',
-                              width: double.infinity,
-                              height: heroHeight,
-                              fit: BoxFit.cover,
-                            );
-                          },
+                        height: heroHeight + topPadding,
+                        fit: BoxFit.cover,
+                        alignment: Alignment.center,
+                        errorBuilder: (_, __, ___) => const SizedBox(),
+                      ),
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              const Color(0xFF070C18).withOpacity(0.85),
+                              const Color(0xFF0F172A).withOpacity(0.35),
+                              const Color(0xFF0F172A).withOpacity(0.9),
+                            ],
+                          ),
                         ),
                       ),
-
-                      // Optional Back Button
+                      SafeArea(
+                        bottom: false,
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Image.asset(
+                                  'assets/images/header_logo.png',
+                                  height: 38,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) => Image.asset(
+                                    'assets/header_logo.png',
+                                    height: 38,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                                const SizedBox(height: 5),
+                                const Text(
+                                  'NEW & USED AUTO SPARE PARTS MARKETPLACE',
+                                  style: TextStyle(
+                                    color: Color(0xFF94A3B8),
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 1.1,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                       if (canGoBack)
                         Positioned(
-                          top: 40,
+                          top: topPadding + 8,
                           left: 16,
                           child: InkWell(
                             onTap: () => Navigator.pop(context),
@@ -273,7 +310,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                               width: 38,
                               height: 38,
                               decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.4),
+                                color: Colors.black.withOpacity(0.45),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
@@ -282,16 +319,17 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                         ),
                     ],
                   ),
+                ),
 
-                  // 2. BOTTOM WHITE SHEET SIGN-IN CARD MATCHING REFERENCE IMAGE
-                  Expanded(
-                    child: Container(
-                      width: double.infinity,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-                      ),
-                      child: SingleChildScrollView(
+                // 2. BOTTOM WHITE SHEET SIGN-IN CARD MATCHING REFERENCE IMAGE
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                    ),
+                    child: SingleChildScrollView(
                         physics: const BouncingScrollPhysics(),
                         padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
                         child: Column(

@@ -161,21 +161,32 @@ class ProfileScreen extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings_outlined, color: Color(0xFF0F172A)),
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => SettingsScreen()));
-            },
+            icon: const Icon(Icons.tune_rounded, color: Color(0xFF0F172A), size: 22),
+            tooltip: 'Settings',
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SettingsScreen())),
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 40),
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 24),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. User Header & Profile Avatar Card
+            // 1. Compact User Header & Profile Avatar Card
             Container(
-              color: Colors.white,
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0F172A).withOpacity(0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
               child: Column(
                 children: [
                   Row(
@@ -186,24 +197,24 @@ class ProfileScreen extends StatelessWidget {
                           ProfileAvatar(
                             photoUrl: auth.userProfile?.photoURL ?? user?.photoURL,
                             name: auth.userProfile?.displayName ?? user?.displayName ?? 'Auto Enthusiast',
-                            radius: 36,
+                            radius: 28,
                           ),
                           if (isAdmin)
                             Positioned(
                               bottom: 0,
                               right: 0,
                               child: Container(
-                                padding: const EdgeInsets.all(3),
+                                padding: const EdgeInsets.all(2),
                                 decoration: const BoxDecoration(
                                   color: Color(0xFFF59E0B),
                                   shape: BoxShape.circle,
                                 ),
-                                child: const Icon(Icons.star_rounded, size: 14, color: Colors.white),
+                                child: const Icon(Icons.star_rounded, size: 12, color: Colors.white),
                               ),
                             ),
                         ],
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 12),
                       // Details
                       Expanded(
                         child: auth.isAuthenticated
@@ -214,52 +225,39 @@ class ProfileScreen extends StatelessWidget {
                                     children: [
                                       Flexible(
                                         child: Text(
-                                          user?.displayName ?? 'Auto Parts Trader',
-                                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                                          user?.displayName ?? 'Auto Trader',
+                                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
-                                      const SizedBox(width: 6),
-                                      const Icon(Icons.verified_rounded, size: 16, color: Color(0xFF0075FF)),
+                                      const SizedBox(width: 4),
+                                      const Icon(Icons.verified_rounded, size: 15, color: Color(0xFF0075FF)),
                                     ],
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     user?.email ?? '',
-                                    style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                                    style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  const SizedBox(height: 6),
+                                  const SizedBox(height: 4),
                                   if (isAdmin)
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                                       decoration: BoxDecoration(
                                         color: const Color(0xFFFEF3C7),
-                                        borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(color: const Color(0xFFFDE68A)),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: const Color(0xFFFDE68A), width: 0.8),
                                       ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: const [
-                                          Icon(Icons.shield_rounded, size: 12, color: Color(0xFFD97706)),
-                                          SizedBox(width: 4),
-                                          Text(
-                                            'SUPER ADMIN',
-                                            style: TextStyle(color: Color(0xFFD97706), fontSize: 10, fontWeight: FontWeight.w900),
-                                          ),
-                                        ],
+                                      child: const Text(
+                                        'SUPER ADMIN',
+                                        style: TextStyle(color: Color(0xFFD97706), fontSize: 9.5, fontWeight: FontWeight.w900),
                                       ),
                                     )
                                   else
-                                    Row(
-                                      children: const [
-                                        Icon(Icons.shield_outlined, size: 13, color: Color(0xFF10B981)),
-                                        SizedBox(width: 4),
-                                        Text('Verified Seller & Buyer', style: TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.w700)),
-                                      ],
-                                    ),
+                                    const Text('Verified Auto Trader', style: TextStyle(color: Color(0xFF16A34A), fontSize: 11, fontWeight: FontWeight.w700)),
                                 ],
                               )
                             : Column(
@@ -267,42 +265,40 @@ class ProfileScreen extends StatelessWidget {
                                 children: [
                                   const Text(
                                     'Welcome, Guest Trader',
-                                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
                                   ),
                                   const SizedBox(height: 4),
-                                  const Text(
-                                    'Sign in to list parts, chat & negotiate',
-                                    style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
-                                  ),
-                                  const SizedBox(height: 8),
                                   GestureDetector(
-                                    onTap: () {
-                                      Navigator.push(context, MaterialPageRoute(builder: (_) => const AuthScreen()));
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF0075FF),
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      child: const Text('Sign In / Register →', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                                    ),
+                                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AuthScreen())),
+                                    child: const Text('Sign In / Register →', style: TextStyle(color: Color(0xFF0075FF), fontSize: 12, fontWeight: FontWeight.bold)),
                                   ),
                                 ],
                               ),
                       ),
+                      // Edit Profile Button
+                      if (auth.isAuthenticated)
+                        IconButton(
+                          style: IconButton.styleFrom(
+                            backgroundColor: const Color(0xFFF1F5F9),
+                            foregroundColor: const Color(0xFF0075FF),
+                            padding: const EdgeInsets.all(8),
+                          ),
+                          icon: const Icon(Icons.edit_outlined, size: 18),
+                          tooltip: 'Edit Profile',
+                          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen())),
+                        ),
                     ],
                   ),
 
-                  // Interactive Metric Badges
+                  // Compact Metric Badges (Single sleek row)
                   if (auth.isAuthenticated) ...[
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
                     Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE2E8F0), width: 0.8),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -319,7 +315,7 @@ class ProfileScreen extends StatelessWidget {
                               );
                             },
                           ),
-                          Container(width: 1, height: 26, color: const Color(0xFFCBD5E1)),
+                          Container(width: 1, height: 20, color: const Color(0xFFCBD5E1)),
 
                           // Wishlist count
                           _buildMetricItem(
@@ -327,7 +323,7 @@ class ProfileScreen extends StatelessWidget {
                             value: '${partsProvider.wishlistPartIds.length}',
                             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WishlistScreen())),
                           ),
-                          Container(width: 1, height: 26, color: const Color(0xFFCBD5E1)),
+                          Container(width: 1, height: 20, color: const Color(0xFFCBD5E1)),
 
                           // Rating
                           _buildMetricItem(
@@ -342,177 +338,254 @@ class ProfileScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
 
-            // 2. Super Admin Portal Hub (Visible only to Admin emails)
+            // 2. Super Admin Portal Strip (Visible only to Admin emails)
             if (isAdmin) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [const Color(0xFFFEF3C7), const Color(0xFFFFFBEB)],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFFDE68A)),
+                ),
                 child: Row(
                   children: [
-                    Container(width: 4, height: 16, decoration: BoxDecoration(color: const Color(0xFFF59E0B), borderRadius: BorderRadius.circular(2))),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminDashboardScreen())),
+                        child: Row(
+                          children: const [
+                            Icon(Icons.admin_panel_settings_rounded, color: Color(0xFFD97706), size: 18),
+                            SizedBox(width: 6),
+                            Text('Marketplace Console', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: Color(0xFF92400E))),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Container(width: 1, height: 20, color: const Color(0xFFFCD34D)),
                     const SizedBox(width: 8),
-                    const Text('Marketplace Management', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF0F172A))),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 6),
-              Container(
-                color: Colors.white,
-                child: Column(
-                  children: [
-                    _buildMenuTile(
-                      icon: Icons.admin_panel_settings_rounded,
-                      iconColor: const Color(0xFFF59E0B),
-                      title: 'Marketplace Console',
-                      subtitle: 'Review listings, manage members & reports',
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminDashboardScreen())),
-                    ),
-                    const Divider(height: 1, indent: 56, color: Color(0xFFF1F5F9)),
-                    _buildMenuTile(
-                      icon: Icons.alt_route_rounded,
-                      iconColor: const Color(0xFF0075FF),
-                      title: 'Car Brands & Categories',
-                      subtitle: 'Manage vehicle catalog, models & categories',
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminTaxonomyScreen())),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminTaxonomyScreen())),
+                        child: Row(
+                          children: const [
+                            Icon(Icons.alt_route_rounded, color: Color(0xFF0075FF), size: 18),
+                            SizedBox(width: 6),
+                            Text('Brands & Catalog', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: Color(0xFF0052B4))),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
             ],
 
-            // 3. Marketplace Activities
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Row(
-                children: [
-                  Container(width: 4, height: 16, decoration: BoxDecoration(color: const Color(0xFF0075FF), borderRadius: BorderRadius.circular(2))),
-                  const SizedBox(width: 8),
-                  const Text('Marketplace Activities', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF0F172A))),
-                ],
-              ),
+            // 3. Compact 4-Grid Quick Actions
+            Row(
+              children: [
+                _buildQuickActionTile(
+                  icon: Icons.inventory_2_outlined,
+                  iconColor: const Color(0xFF0075FF),
+                  bgColor: const Color(0xFFEFF6FF),
+                  title: 'My Ads',
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyAdsScreen())),
+                ),
+                const SizedBox(width: 8),
+                _buildQuickActionTile(
+                  icon: Icons.favorite_outline_rounded,
+                  iconColor: const Color(0xFFEF4444),
+                  bgColor: const Color(0xFFFEF2F2),
+                  title: 'Saved',
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WishlistScreen())),
+                ),
+                const SizedBox(width: 8),
+                _buildQuickActionTile(
+                  icon: Icons.history_rounded,
+                  iconColor: const Color(0xFF8B5CF6),
+                  bgColor: const Color(0xFFF5F3FF),
+                  title: 'Recent',
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RecentlyViewedScreen())),
+                ),
+                const SizedBox(width: 8),
+                _buildQuickActionTile(
+                  icon: Icons.notifications_none_rounded,
+                  iconColor: const Color(0xFF10B981),
+                  bgColor: const Color(0xFFECFDF5),
+                  title: 'Alerts',
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen())),
+                ),
+              ],
             ),
-            const SizedBox(height: 6),
-            Container(
-              color: Colors.white,
-              child: Column(
-                children: [
-                  _buildMenuTile(
-                    icon: Icons.inventory_2_outlined,
-                    iconColor: const Color(0xFF0075FF),
-                    title: 'My Listed Parts (Ads)',
-                    subtitle: 'Manage active, sold, and deleted ads',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyAdsScreen())),
-                  ),
-                  const Divider(height: 1, indent: 56, color: Color(0xFFF1F5F9)),
-                  _buildMenuTile(
-                    icon: Icons.favorite_outline_rounded,
-                    iconColor: const Color(0xFFEF4444),
-                    title: 'Wishlist / Saved Parts',
-                    subtitle: 'Spare parts you bookmarked for later',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WishlistScreen())),
-                  ),
-                  const Divider(height: 1, indent: 56, color: Color(0xFFF1F5F9)),
-                  _buildMenuTile(
-                    icon: Icons.history_rounded,
-                    iconColor: const Color(0xFF8B5CF6),
-                    title: 'Recently Viewed Parts',
-                    subtitle: 'History of parts you browsed recently',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RecentlyViewedScreen())),
-                  ),
-                  const Divider(height: 1, indent: 56, color: Color(0xFFF1F5F9)),
-                  _buildMenuTile(
-                    icon: Icons.notifications_none_rounded,
-                    iconColor: const Color(0xFF10B981),
-                    title: 'Notifications & Alerts',
-                    subtitle: 'Offers, chats and price drop notices',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen())),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
 
-            // 4. Preferences & Support
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Row(
-                children: [
-                  Container(width: 4, height: 16, decoration: BoxDecoration(color: const Color(0xFF0075FF), borderRadius: BorderRadius.circular(2))),
-                  const SizedBox(width: 8),
-                  const Text('Settings & Help Support', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF0F172A))),
+            // 4. Compact Settings & Help Menu Card
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0F172A).withOpacity(0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
                 ],
               ),
-            ),
-            const SizedBox(height: 6),
-            Container(
-              color: Colors.white,
               child: Column(
                 children: [
-                  _buildMenuTile(
+                  _buildCompactTile(
                     icon: Icons.language_rounded,
                     iconColor: const Color(0xFF0075FF),
                     title: 'Language / மொழி',
-                    subtitle: lang.currentLanguage == 'ta' ? 'தமிழ் (Tamil)' : (lang.currentLanguage == 'hi' ? 'हिन्दी (Hindi)' : 'English'),
+                    trailingText: lang.currentLanguage == 'ta' ? 'தமிழ்' : (lang.currentLanguage == 'hi' ? 'हिन्दी' : 'English'),
                     onTap: () => _showLanguageDialog(context),
                   ),
-                  const Divider(height: 1, indent: 56, color: Color(0xFFF1F5F9)),
-                  if (auth.isAuthenticated) ...[
-                    _buildMenuTile(
-                      icon: Icons.badge_outlined,
-                      iconColor: const Color(0xFF64748B),
-                      title: 'Edit Trader Profile',
-                      subtitle: 'Update phone number, location, and workshop name',
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen())),
-                    ),
-                    const Divider(height: 1, indent: 56, color: Color(0xFFF1F5F9)),
-                  ],
-                  _buildMenuTile(
+                  const Divider(height: 1, indent: 44, color: Color(0xFFF1F5F9)),
+                  _buildCompactTile(
                     icon: Icons.help_outline_rounded,
                     iconColor: const Color(0xFF10B981),
-                    title: 'Help & Support',
-                    subtitle: 'Safety rules, buyer protection & Email support',
+                    title: 'Help & Customer Support',
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpSupportScreen())),
                   ),
-                  const Divider(height: 1, indent: 56, color: Color(0xFFF1F5F9)),
-                  _buildMenuTile(
-                    icon: Icons.tune_rounded,
+                  const Divider(height: 1, indent: 44, color: Color(0xFFF1F5F9)),
+                  _buildCompactTile(
+                    icon: Icons.settings_outlined,
                     iconColor: const Color(0xFF64748B),
-                    title: 'App Settings',
-                    subtitle: 'Notifications, sounds & preferences',
+                    title: 'App Preferences & Settings',
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SettingsScreen())),
                   ),
+                  if (auth.isAuthenticated) ...[
+                    const Divider(height: 1, indent: 44, color: Color(0xFFF1F5F9)),
+                    _buildCompactTile(
+                      icon: Icons.logout_rounded,
+                      iconColor: const Color(0xFFEF4444),
+                      title: 'Sign Out',
+                      titleColor: const Color(0xFFEF4444),
+                      onTap: () => _confirmSignOut(context, auth),
+                    ),
+                  ],
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
 
-            // Sign Out Button (If authenticated)
-            if (auth.isAuthenticated)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFFEF4444)),
-                      foregroundColor: const Color(0xFFEF4444),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    ),
-                    icon: const Icon(Icons.logout_rounded, size: 18),
-                    label: const Text('Sign Out from Auto Parts India', style: TextStyle(fontWeight: FontWeight.w800)),
-                    onPressed: () => _confirmSignOut(context, auth),
-                  ),
+            // Footer
+            const Center(
+              child: Text(
+                'Auto Parts India • 100% Genuine Marketplace',
+                style: TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8), fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionTile({
+    required IconData icon,
+    required Color iconColor,
+    required Color bgColor,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFF1F5F9)),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF0F172A).withOpacity(0.03),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: iconColor, size: 18),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                title,
+                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11.5, color: Color(0xFF0F172A)),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactTile({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    Color? titleColor,
+    String? trailingText,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: iconColor, size: 16),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  color: titleColor ?? const Color(0xFF0F172A),
                 ),
               ),
-
-            const SizedBox(height: 16),
-            const Text(
-              'Auto Parts India • 100% Genuine Marketplace',
-              style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8), fontWeight: FontWeight.w500),
             ),
+            if (trailingText != null) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  trailingText,
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF0075FF)),
+                ),
+              ),
+              const SizedBox(width: 4),
+            ],
+            const Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFFCBD5E1)),
           ],
         ),
       ),
@@ -522,42 +595,24 @@ class ProfileScreen extends StatelessWidget {
   Widget _buildMetricItem({required String label, required String value, required VoidCallback onTap}) {
     return InkWell(
       onTap: onTap,
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMenuTile({
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: iconColor.withOpacity(0.12),
-          shape: BoxShape.circle,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              value,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+            ),
+            const SizedBox(height: 1),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+            ),
+          ],
         ),
-        child: Icon(icon, color: iconColor, size: 20),
       ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF0F172A))),
-      subtitle: Text(subtitle, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-      trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: Color(0xFF94A3B8)),
-      onTap: onTap,
     );
   }
 }

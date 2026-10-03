@@ -17,6 +17,7 @@ import 'search_screen.dart';
 import 'notifications_screen.dart';
 import 'location_select_screen.dart';
 import 'all_categories_screen.dart';
+import '../constants/categories_data.dart';
 import 'sell_part_screen.dart';
 import 'nearby_map_screen.dart';
 
@@ -196,22 +197,22 @@ class _HomeScreenState extends State<HomeScreen> {
             // Official Brand Header Logo
             Image.asset(
               'assets/images/header_logo.png',
-              height: 38,
+              height: 32,
               fit: BoxFit.contain,
               errorBuilder: (_, __, ___) => Image.asset(
                 'assets/header_logo.png',
-                height: 38,
+                height: 32,
                 fit: BoxFit.contain,
                 errorBuilder: (_, __, ___) => Image.asset(
                   'assets/brand_logo.png',
-                  height: 38,
+                  height: 32,
                   fit: BoxFit.contain,
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
 
-            // Location Selector with Live GPS Pill
+            // Location Selector (Clearly visible location name)
             Expanded(
               child: InkWell(
                 onTap: () async {
@@ -225,57 +226,31 @@ class _HomeScreenState extends State<HomeScreen> {
                     await prefs.setString('user_selected_city', result);
                   }
                 },
-                borderRadius: BorderRadius.circular(20),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Row(
                     children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF10B981),
-                              shape: BoxShape.circle,
-                            ),
+                      const Icon(Icons.location_on_rounded, size: 15, color: Color(0xFF0075FF)),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          _selectedCity.isEmpty ? 'All India' : _selectedCity,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF0F172A),
+                            fontWeight: FontWeight.w800,
                           ),
-                          const SizedBox(width: 4),
-                          const Text(
-                            'LOCATION',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF64748B),
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                        ],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                      const SizedBox(height: 1),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.location_on_rounded, size: 14, color: Color(0xFF0075FF)),
-                          const SizedBox(width: 3),
-                          Flexible(
-                            child: Text(
-                              _selectedCity,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF0F172A),
-                                fontWeight: FontWeight.w800,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: Color(0xFF64748B)),
-                        ],
-                      ),
+                      const Icon(Icons.arrow_drop_down_rounded, size: 20, color: Color(0xFF64748B)),
                     ],
                   ),
                 ),
@@ -747,230 +722,94 @@ class _HomeScreenState extends State<HomeScreen> {
                     StreamBuilder<QuerySnapshot>(
                       stream: _categoriesStream,
                       builder: (context, catSnap) {
-                        if (catSnap.connectionState == ConnectionState.waiting) {
-                          return const SizedBox(
-                            height: 100,
-                            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                          );
-                        }
-
                         List<Map<String, dynamic>> categoriesList = [];
                         if (catSnap.hasData && catSnap.data!.docs.isNotEmpty) {
-                          categoriesList = catSnap.data!.docs.map((d) => d.data() as Map<String, dynamic>).toList();
-                          categoriesList.sort((a, b) => ((a['order'] ?? 0) as num).compareTo((b['order'] ?? 0) as num));
-                        }
-                        if (categoriesList.isEmpty) {
-                          return const SizedBox.shrink();
-                        }
-
-                        return SizedBox(
-                          height: 100,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            itemCount: categoriesList.length,
-                            itemBuilder: (context, index) {
-                              final cat = categoriesList[index];
-                              final isSelected = partsProvider.selectedCategory == cat['name'];
-
-                              return GestureDetector(
-                                onTap: () {
-                                  partsProvider.selectCategory(isSelected ? 'All' : cat['name']);
-                                },
-                                child: Container(
-                                  width: 84,
-                                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                                  child: Column(
-                                    children: [
-                                      Container(
-                                        width: 58,
-                                        height: 58,
-                                        decoration: BoxDecoration(
-                                          color: isSelected ? const Color(0xFF0075FF).withOpacity(0.12) : Colors.white,
-                                          borderRadius: BorderRadius.circular(18),
-                                          border: Border.all(
-                                            color: isSelected ? const Color(0xFF0075FF) : const Color(0xFFE2E8F0),
-                                            width: isSelected ? 2 : 1,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: const Color(0xFF0F172A).withOpacity(0.04),
-                                              blurRadius: 6,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ],
-                                        ),
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(17),
-                                          child: cat['imageUrl'] != null && (cat['imageUrl'] as String).isNotEmpty
-                                              ? CachedNetworkImage(
-                                                  imageUrl: cat['imageUrl'],
-                                                  fit: BoxFit.cover,
-                                                  errorWidget: (_, __, ___) => Icon(cat['icon'] ?? Icons.category_rounded, color: const Color(0xFF0075FF)),
-                                                )
-                                              : Icon(cat['icon'] ?? Icons.category_rounded, color: const Color(0xFF0075FF)),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        cat['name'] ?? '',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                                          color: isSelected ? const Color(0xFF0075FF) : const Color(0xFF334155),
-                                        ),
-                                        maxLines: 2,
-                                        textAlign: TextAlign.center,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // 4. Car Brands Filter Rail
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 8, bottom: 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 4,
-                            height: 16,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF0075FF),
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            lang.t('topBrands'),
-                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    StreamBuilder<QuerySnapshot>(
-                      stream: _brandsStream,
-                      builder: (context, brandSnap) {
-                        List<Map<String, dynamic>> brandsList = [];
-                        if (brandSnap.hasData && brandSnap.data!.docs.isNotEmpty) {
-                          brandsList = brandSnap.data!.docs.map((d) {
+                          categoriesList = catSnap.data!.docs.map((d) {
                             final data = d.data() as Map<String, dynamic>;
                             return {...data, 'id': d.id};
-                          }).where((d) => d['active'] != false).toList();
-
-                          brandsList.sort((a, b) => ((a['order'] ?? 0) as num).compareTo((b['order'] ?? 0) as num));
+                          }).toList();
+                          categoriesList.sort((a, b) => ((a['order'] ?? 0) as num).compareTo((b['order'] ?? 0) as num));
                         }
 
-                        // If Firestore has no brands, supply standard Indian top car brands with verified logos
-                        if (brandsList.isEmpty) {
-                          brandsList = [
-                            {'name': 'Maruti Suzuki', 'logoUrl': _defaultBrandLogos['maruti suzuki']},
-                            {'name': 'Hyundai', 'logoUrl': _defaultBrandLogos['hyundai']},
-                            {'name': 'Tata Motors', 'logoUrl': _defaultBrandLogos['tata motors']},
-                            {'name': 'Mahindra', 'logoUrl': _defaultBrandLogos['mahindra']},
-                            {'name': 'Toyota', 'logoUrl': _defaultBrandLogos['toyota']},
-                            {'name': 'Honda', 'logoUrl': _defaultBrandLogos['honda']},
-                            {'name': 'Kia', 'logoUrl': _defaultBrandLogos['kia']},
-                            {'name': 'Volkswagen', 'logoUrl': _defaultBrandLogos['volkswagen']},
-                            {'name': 'Skoda', 'logoUrl': _defaultBrandLogos['skoda']},
-                            {'name': 'Ford', 'logoUrl': _defaultBrandLogos['ford']},
-                          ];
+                        // Fallback to rich master categories if Firestore has no custom entries
+                        if (categoriesList.isEmpty) {
+                          categoriesList = MASTER_CATEGORIES.map((c) => {
+                            'id': c.id,
+                            'name': c.name,
+                            'imageUrl': c.imageUrl,
+                            'icon': Icons.category_rounded,
+                          }).toList();
                         }
 
-                        // Total items: 1 (All Brands) + brandsList.length
+                        // Double Layer Grid: Exactly 2 Rows horizontally scrollable (OLX Style)
                         return SizedBox(
-                          height: 98,
-                          child: ListView.separated(
+                          height: 204, // 2-Row Height
+                          child: GridView.builder(
                             scrollDirection: Axis.horizontal,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            itemCount: brandsList.length + 1,
-                            separatorBuilder: (_, __) => const SizedBox(width: 12),
+                            physics: const BouncingScrollPhysics(),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2, // 2 Rows (Double Layer)
+                              mainAxisSpacing: 10,
+                              crossAxisSpacing: 8,
+                              childAspectRatio: 1.15,
+                            ),
+                            itemCount: categoriesList.length + 1, // + 1 for "See all" card
                             itemBuilder: (context, index) {
-                              // Item 0: All Brands button
-                              if (index == 0) {
-                                final isSelected = partsProvider.selectedBrand == 'All';
+                              // Last item: "See all" card
+                              if (index == categoriesList.length) {
                                 return GestureDetector(
-                                  onTap: () => partsProvider.selectBrand('All'),
+                                  onTap: () {
+                                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AllCategoriesScreen()));
+                                  },
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Container(
-                                        width: 58,
-                                        height: 58,
+                                        width: 60,
+                                        height: 60,
                                         decoration: BoxDecoration(
-                                          color: isSelected ? const Color(0xFF0075FF) : Colors.white,
-                                          borderRadius: BorderRadius.circular(18),
-                                          border: Border.all(
-                                            color: isSelected ? const Color(0xFF0075FF) : const Color(0xFFE2E8F0),
-                                            width: isSelected ? 2 : 1,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: isSelected
-                                                  ? const Color(0xFF0075FF).withOpacity(0.3)
-                                                  : const Color(0xFF0F172A).withOpacity(0.04),
-                                              blurRadius: isSelected ? 8 : 4,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ],
+                                          color: const Color(0xFFEFF6FF),
+                                          borderRadius: BorderRadius.circular(16),
+                                          border: Border.all(color: const Color(0xFFDBEAFE), width: 1.2),
                                         ),
-                                        child: Center(
-                                          child: Icon(
-                                            Icons.directions_car_filled_rounded,
-                                            size: 26,
-                                            color: isSelected ? Colors.white : const Color(0xFF0075FF),
-                                          ),
+                                        child: const Center(
+                                          child: Icon(Icons.arrow_forward_rounded, color: Color(0xFF0075FF), size: 22),
                                         ),
                                       ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        'All Brands',
+                                      const SizedBox(height: 4),
+                                      const Text(
+                                        'See all',
                                         style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                                          color: isSelected ? const Color(0xFF0075FF) : const Color(0xFF334155),
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w800,
+                                          color: Color(0xFF0075FF),
                                         ),
+                                        textAlign: TextAlign.center,
                                       ),
                                     ],
                                   ),
                                 );
                               }
 
-                              final brand = brandsList[index - 1];
-                              final name = (brand['name'] ?? '') as String;
-                              final isSelected = partsProvider.selectedBrand == name;
-                              final logoUrl = _resolveBrandLogo(brand);
+                              final cat = categoriesList[index];
+                              final name = (cat['name'] ?? '') as String;
+                              final isSelected = partsProvider.selectedCategory == name;
+                              final imageUrl = cat['imageUrl'] as String?;
 
                               return GestureDetector(
                                 onTap: () {
-                                  partsProvider.selectBrand(isSelected ? 'All' : name);
+                                  partsProvider.selectCategory(isSelected ? 'All' : name);
                                 },
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Container(
-                                      width: 58,
-                                      height: 58,
+                                      width: 60,
+                                      height: 60,
                                       decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(18),
+                                        color: isSelected ? const Color(0xFFEFF6FF) : const Color(0xFFF8FAFC),
+                                        borderRadius: BorderRadius.circular(16),
                                         border: Border.all(
                                           color: isSelected ? const Color(0xFF0075FF) : const Color(0xFFE2E8F0),
                                           width: isSelected ? 2 : 1,
@@ -978,50 +817,44 @@ class _HomeScreenState extends State<HomeScreen> {
                                         boxShadow: [
                                           BoxShadow(
                                             color: isSelected
-                                                ? const Color(0xFF0075FF).withOpacity(0.24)
-                                                : const Color(0xFF0F172A).withOpacity(0.04),
-                                            blurRadius: isSelected ? 8 : 4,
-                                            offset: const Offset(0, 2),
+                                                ? const Color(0xFF0075FF).withOpacity(0.18)
+                                                : const Color(0xFF0F172A).withOpacity(0.03),
+                                            blurRadius: isSelected ? 6 : 3,
+                                            offset: const Offset(0, 1),
                                           ),
                                         ],
                                       ),
-                                      padding: const EdgeInsets.all(8),
+                                      padding: const EdgeInsets.all(7),
                                       child: ClipRRect(
                                         borderRadius: BorderRadius.circular(10),
-                                        child: (logoUrl != null && logoUrl.isNotEmpty)
+                                        child: (imageUrl != null && imageUrl.isNotEmpty)
                                             ? CachedNetworkImage(
-                                                imageUrl: logoUrl,
+                                                imageUrl: imageUrl,
                                                 fit: BoxFit.contain,
                                                 placeholder: (_, __) => const Center(
                                                   child: SizedBox(
-                                                    width: 14,
-                                                    height: 14,
+                                                    width: 12,
+                                                    height: 12,
                                                     child: CircularProgressIndicator(strokeWidth: 1.5, color: Color(0xFF0075FF)),
                                                   ),
                                                 ),
-                                                errorWidget: (_, __, ___) => Center(
-                                                  child: Icon(Icons.directions_car_rounded, color: const Color(0xFF0075FF).withOpacity(0.7), size: 24),
-                                                ),
+                                                errorWidget: (_, __, ___) => Icon(cat['icon'] ?? Icons.category_rounded, color: const Color(0xFF0075FF), size: 22),
                                               )
-                                            : Center(
-                                                child: Text(
-                                                  name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'B',
-                                                  style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF0075FF), fontSize: 20),
-                                                ),
-                                              ),
+                                            : Icon(cat['icon'] ?? Icons.category_rounded, color: const Color(0xFF0075FF), size: 22),
                                       ),
                                     ),
-                                    const SizedBox(height: 6),
+                                    const SizedBox(height: 4),
                                     SizedBox(
-                                      width: 68,
+                                      width: 64,
                                       child: Text(
                                         name,
                                         style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                                          color: isSelected ? const Color(0xFF0075FF) : const Color(0xFF334155),
+                                          fontSize: 10,
+                                          fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                                          color: isSelected ? const Color(0xFF0075FF) : const Color(0xFF1E293B),
+                                          height: 1.15,
                                         ),
-                                        maxLines: 1,
+                                        maxLines: 2,
                                         textAlign: TextAlign.center,
                                         overflow: TextOverflow.ellipsis,
                                       ),

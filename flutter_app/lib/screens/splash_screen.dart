@@ -238,97 +238,109 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
             fit: StackFit.expand,
             alignment: Alignment.center,
             children: [
-              // Full Screen Edge-to-Edge Splash Screen
-              FadeTransition(
-                opacity: _fadeAnimation,
-                child: Image.asset(
-                  'assets/images/splash_reference.png',
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: double.infinity,
-                  alignment: Alignment.center,
-                  errorBuilder: (context, error, stackTrace) {
-                    // Graceful fallback to root assets path if nested path fails
-                    return Image.asset(
-                      'assets/splash_reference.png',
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                      alignment: Alignment.center,
-                      errorBuilder: (_, __, ___) {
-                        // Beautiful vector fallback with identical styling
-                        return Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 88,
-                                height: 88,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFF7300),
-                                  borderRadius: BorderRadius.circular(24),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFFFF7300).withOpacity(0.35),
-                                      blurRadius: 32,
-                                      offset: const Offset(0, 10),
-                                    ),
-                                  ],
-                                ),
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.directions_car_filled_rounded,
-                                    size: 48,
-                                    color: Colors.white,
+              // Full Screen Edge-to-Edge Splash Screen with Safe-Area Adaptive Scaling
+              Positioned.fill(
+                child: Container(
+                  color: const Color(0xFF060A13),
+                  child: SafeArea(
+                    top: true,
+                    bottom: false,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 12.0),
+                      child: FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: Image.asset(
+                          'assets/images/splash_reference.png',
+                          fit: BoxFit.contain,
+                          alignment: Alignment.topCenter,
+                          width: double.infinity,
+                          height: double.infinity,
+                          errorBuilder: (context, error, stackTrace) {
+                            // Graceful fallback to root assets path if nested path fails
+                            return Image.asset(
+                              'assets/splash_reference.png',
+                              fit: BoxFit.contain,
+                              alignment: Alignment.topCenter,
+                              width: double.infinity,
+                              height: double.infinity,
+                              errorBuilder: (_, __, ___) {
+                                // Beautiful vector fallback with identical styling
+                                return Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 88,
+                                        height: 88,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFFF7300),
+                                          borderRadius: BorderRadius.circular(24),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: const Color(0xFFFF7300).withOpacity(0.35),
+                                              blurRadius: 32,
+                                              offset: const Offset(0, 10),
+                                            ),
+                                          ],
+                                        ),
+                                        child: const Center(
+                                          child: Icon(
+                                            Icons.directions_car_filled_rounded,
+                                            size: 48,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 24),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: const [
+                                          Text(
+                                            'Auto ',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 32,
+                                              fontWeight: FontWeight.w900,
+                                              letterSpacing: -0.5,
+                                            ),
+                                          ),
+                                          Text(
+                                            'Parts',
+                                            style: TextStyle(
+                                              color: Color(0xFFFF7300),
+                                              fontSize: 32,
+                                              fontWeight: FontWeight.w900,
+                                              letterSpacing: -0.5,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 12),
+                                      const Text(
+                                        '—  I N D I A  —',
+                                        style: TextStyle(
+                                          color: Color(0xFFE5E7EB),
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 4.0,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: const [
-                                  Text(
-                                    'Auto ',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: -0.5,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Parts',
-                                    style: TextStyle(
-                                      color: Color(0xFFFF7300),
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: -0.5,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              const Text(
-                                '—  I N D I A  —',
-                                style: TextStyle(
-                                  color: Color(0xFFE5E7EB),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 4.0,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    );
-                  },
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
 
               // Live, Smooth, Animated Loading Progress Bar
               Positioned(
-                bottom: MediaQuery.of(context).size.height * 0.11,
+                bottom: MediaQuery.of(context).padding.bottom + 36,
                 child: SafeArea(
                   child: FadeTransition(
                     opacity: _fadeAnimation,

@@ -19,6 +19,7 @@ import 'seller_profile_screen.dart';
 import 'edit_listing_screen.dart';
 import 'full_screen_gallery_screen.dart';
 import '../services/cloudinary_service.dart';
+import '../widgets/profile_avatar.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final SparePart part;
@@ -812,18 +813,35 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Row(
                         children: [
-                          Container(
-                            width: 52,
-                            height: 52,
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF0075FF), Color(0xFF0052B4)],
-                              ),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: const Center(
-                              child: Icon(Icons.person_rounded, color: Colors.white, size: 28),
-                            ),
+                          StreamBuilder<DocumentSnapshot>(
+                            stream: widget.part.sellerId.isNotEmpty
+                                ? _db.collection('users').doc(widget.part.sellerId).snapshots()
+                                : null,
+                            builder: (context, userSnap) {
+                              String? photoUrl;
+                              if (userSnap.hasData && userSnap.data != null && userSnap.data!.exists) {
+                                final uData = userSnap.data!.data() as Map<String, dynamic>?;
+                                photoUrl = uData?['photoUrl'] ?? uData?['avatarUrl'] ?? uData?['profileImage'];
+                              }
+                              return ProfileAvatar(
+                                name: widget.part.contactName ?? 'Seller',
+                                photoUrl: photoUrl,
+                                radius: 26,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => SellerProfileScreen(
+                                        sellerId: widget.part.sellerId,
+                                        sellerName: widget.part.contactName ?? 'Verified Seller',
+                                        sellerPhone: widget.part.contactPhone,
+                                        location: widget.part.location,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
                           ),
                           const SizedBox(width: 14),
                           Expanded(

@@ -11,6 +11,7 @@ import 'seller_reviews_screen.dart';
 import 'chat_room_screen.dart';
 import 'auth_screen.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/profile_avatar.dart';
 import 'package:provider/provider.dart';
 
 class SellerProfileScreen extends StatefulWidget {
@@ -143,13 +144,22 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                       color: Colors.white,
                       child: Column(
                         children: [
-                          CircleAvatar(
-                            radius: 38,
-                            backgroundColor: const Color(0xFF0075FF).withOpacity(0.12),
-                            child: Text(
-                              widget.sellerName.isNotEmpty ? widget.sellerName[0].toUpperCase() : 'S',
-                              style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: Color(0xFF0075FF)),
-                            ),
+                          StreamBuilder<DocumentSnapshot>(
+                            stream: widget.sellerId.isNotEmpty
+                                ? _db.collection('users').doc(widget.sellerId).snapshots()
+                                : null,
+                            builder: (context, userSnap) {
+                              String? photoUrl;
+                              if (userSnap.hasData && userSnap.data != null && userSnap.data!.exists) {
+                                final uData = userSnap.data!.data() as Map<String, dynamic>?;
+                                photoUrl = uData?['photoUrl'] ?? uData?['avatarUrl'] ?? uData?['photoURL'] ?? uData?['profileImage'] ?? uData?['profilePhoto'];
+                              }
+                              return ProfileAvatar(
+                                name: widget.sellerName,
+                                photoUrl: photoUrl,
+                                radius: 38,
+                              );
+                            },
                           ),
                           const SizedBox(height: 12),
                           Row(
